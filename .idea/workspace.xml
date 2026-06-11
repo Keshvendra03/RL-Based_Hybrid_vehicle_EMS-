@@ -4,31 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e42dec6b-6dea-4556-bb8c-3f548406fc93" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/RL-Based_Hybrid_vehicle_EMS.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/drive_cycles.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/maps.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Data/params.json.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/results/checkpoints.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/results/figures.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/Networks.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/replay_buffer.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/sac.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/env/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/env/ems_env.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/env/powertrain.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/env/vehicle_dynamics.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/teat_env.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_env.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_powertrain.py" afterDir="false" />
-    </list>
+    <list default="true" id="e42dec6b-6dea-4556-bb8c-3f548406fc93" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -44,6 +20,12 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Keshvendra03/RL-Based_Hybrid_vehicle_EMS-.git",
+    "accountId": "67bfb245-fec3-47fb-abe3-b401c13b6fcd"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
 }</component>
