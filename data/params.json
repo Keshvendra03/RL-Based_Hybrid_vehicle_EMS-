@@ -1,0 +1,56 @@
+{
+  "_comment": "All physical constants for the Mercedes-Benz A170 CDI (W168) PHEV model",
+
+  "vehicle": {
+    "mass_kg":              1115.0,
+    "rotating_mass_pct":    5.0,
+    "frontal_area_m2":      2.3,
+    "wheel_diameter_m":     0.576,
+    "drag_coeff":           0.31,
+    "rolling_friction":     0.013,
+    "air_density_kgm3":     1.18,
+    "gravity_ms2":          9.81
+  },
+
+  "gearbox": {
+    "gear_ratios":    [3.27, 1.92, 1.26, 0.88, 0.70],
+    "diff_ratio":     3.29,
+    "efficiency":     0.98,
+    "idle_friction_W": 100.0,
+    "w_min_loss_rads": 1.0
+  },
+
+  "engine": {
+    "inertia_kgm2":      0.2,
+    "idle_speed_rads":   105.0,
+    "idle_power_W":      8000.0,
+    "aux_power_W":       0.0,
+    "fuel_cutoff_Nm":    5.0,
+    "fuel_cutoff_W":     0.0,
+    "T_max_Nm":          187.0,
+    "P_max_W":           60000.0
+  },
+
+  "motor": {
+    "inertia_kgm2":  0.1,
+    "aux_power_W":   0.0,
+    "T_max_Nm":      60.0,
+    "P_max_W":       12000.0,
+    "w_max_rads":    7639.0
+  },
+
+  "battery": {
+    "capacity_Ah":        10.0,
+    "voltage_nom_V":      48.0,
+    "soc_init_pct":       50.0,
+    "min_charge_time_min": 2.0,
+    "P_max_W":            16380.0,
+    "capacity_kWh":       0.468
+  },
+
+  "equivalent_consumption": {
+    "battery_efficiency":  0.9,
+    "motor_efficiency":    0.8,
+    "engine_efficiency":   0.25
+  }
+}

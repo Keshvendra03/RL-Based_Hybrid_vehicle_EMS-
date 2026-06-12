@@ -4,7 +4,44 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e42dec6b-6dea-4556-bb8c-3f548406fc93" name="Changes" comment="" />
+    <list default="true" id="e42dec6b-6dea-4556-bb8c-3f548406fc93" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/T_CE_col.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/V_CE_map.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/check_paths.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conftest.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/drive_cycles/ftp75.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/drive_cycles/nedc.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/maps/data od npz.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/maps/engine_maps.npz" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/maps/motor_maps.npz" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/params.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pytest.ini" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/check_battery_sign.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/check_engine_maps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/check_motor_maps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/diagnose_subsystems.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/env/driving_cycle.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/evaluate.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/fix_engine_maps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/fix_motor_maps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/full_diagnostic.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/validate_gearbox.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/validate_vehicle.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_battery.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_driving_cycle.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_electric_motor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_tank.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/w_CE_row.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/RL-Based_Hybrid_vehicle_EMS.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/RL-Based_Hybrid_vehicle_EMS.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/drive_cycles.py" beforeDir="false" afterPath="$PROJECT_DIR$/README,md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/maps.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/baselines/advanced_rule_based.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/params.json.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/baselines/rule_based.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README_0.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/env/powertrain.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/env/powertrain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_powertrain.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_powertrain.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -20,6 +57,12 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Keshvendra03"
+  }
+}]]></component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "https://github.com/Keshvendra03/RL-Based_Hybrid_vehicle_EMS-.git",
@@ -39,16 +82,34 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python tests.Python tests in test_battery.py.executor": "Run",
+    "Python tests.Python tests in test_driving_cycle.py.executor": "Run",
+    "Python tests.Python tests in test_electric_motor.py.executor": "Run",
+    "Python tests.Python tests in test_powertrain.py.executor": "Run",
+    "Python tests.Python tests in test_tank.py.executor": "Run",
+    "Python.check_paths.executor": "Run",
+    "Python.data od npz.executor": "Run",
+    "Python.evaluate.executor": "Run",
+    "Python.fix_motor_maps.executor": "Run",
+    "Python.powertrain.executor": "Run",
     "Python.teat_env.executor": "Run",
+    "Python.test_driving_cycle.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master"
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/kesh1/PycharmProjects/RL-Based_Hybrid_vehicle_EMS"
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\kesh1\PycharmProjects\RL-Based_Hybrid_vehicle_EMS" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\kesh1\PycharmProjects\RL-Based_Hybrid_vehicle_EMS\src\agents" />
       <recent name="C:\Users\kesh1\PycharmProjects\RL-Based_Hybrid_vehicle_EMS\src\env" />
+      <recent name="C:\Users\kesh1\PycharmProjects\RL-Based_Hybrid_vehicle_EMS\src\baselines" />
+      <recent name="C:\Users\kesh1\PycharmProjects\RL-Based_Hybrid_vehicle_EMS\tests" />
+      <recent name="C:\Users\kesh1\PycharmProjects\RL-Based_Hybrid_vehicle_EMS\data\maps" />
+      <recent name="C:\Users\kesh1\PycharmProjects\RL-Based_Hybrid_vehicle_EMS\data" />
     </key>
   </component>
   <component name="SharedIndexes">
