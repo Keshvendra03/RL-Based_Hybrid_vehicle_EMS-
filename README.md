@@ -19,7 +19,7 @@ foundation for a custom **Gymnasium environment** to train Deep RL agents
       against the reference Simulink model (NEDC cycle).
 - [ ] **Phase 2:** Custom Gymnasium environment (`ems_env.py`) wrapping the
       Phase 1 powertrain for RL training; action/observation space design.
-- [ ] **Phase 3:** Training Deep RL Agents (PPO/DQN) and logging via
+- [ ] **Phase 3:** Training Deep RL Agents (SAC) and logging via
       TensorBoard.
 - [ ] **Phase 4:** Performance validation and comparative evaluation
       against the rule-based baselines below.
