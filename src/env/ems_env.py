@@ -9,9 +9,7 @@ the electric motor (EM) of the parallel mild-hybrid powertrain at every
 1-second step of a driving cycle (NEDC / FTP-75).
 
 ----------------------------------------------------------------------------
-ACTION SPACE  —  Box(low=-1, high=1, shape=(2,))
-  action[0] = a_ce: <0 → engine off, ≥0 → engine on
-  action[1] = a_u:  torque split (same as original single action)
+ACTION SPACE  —  Box(low=-1, high=1, shape=(1,))
 ----------------------------------------------------------------------------
 A single continuous action `a` is mapped inside the environment to the
 torque-split factor `u` (same convention as the rule-based controllers:
@@ -173,7 +171,8 @@ def enable_fast_interpolation() -> None:
 # ===========================================================================
 
 # action -> u mapping bounds
-U_MIN: float = -0.6
+U_MIN: float = -0.85   # was -0.6. Benchmark charges to u=-0.749 (gear 1);
+                       # -0.85 lets the agent bank at least as deep as the benchmark.
 U_MAX: float = 1.0
 
 # Battery operating window (hard action masks)
@@ -183,10 +182,18 @@ SOC_TARGET: float = 0.5
 
 # Reward shaping
 REWARD_SCALE:  float = 100.0     # 1 equivalent liter -> 100 reward units
-LAMBDA_SOC:    float = 2.0       # per-step quadratic SoC penalty weight
-SOC_DEADBAND:  float = 0.20      # free SoC swing (±20%); widened from 0.08.
-                                  # DP optimum uses SoC down to 20%, so the old
-                                  # narrow deadband penalised the winning strategy.
+LAMBDA_SOC:    float = 2.0       # per-step QUADRATIC SoC penalty weight
+LAMBDA_SOC_LIN: float = 1.0      # per-step LINEAR SoC restoring weight.
+                                  # Was 3.0 — that pinned SoC at 50% but OVER-taxed
+                                  # the legitimate bank-and-spend swings the policy
+                                  # needs to beat the benchmark, plateauing fuel at
+                                  # ~3.9 (above benchmark). 1.0 keeps SoC bounded
+                                  # without suppressing regen timing.
+SOC_DEADBAND:  float = 0.10      # free SoC swing (±10%). Middle ground:
+                                  # 0.30 (old) gave NO control -> SoC locked at 67%;
+                                  # 0.05 gave too MUCH control -> fuel stuck at 3.9.
+                                  # 0.10 bounds SoC yet frees the ~45-55% band the
+                                  # bank-and-spend strategy uses to capture regen.
 TERM_TOL:      float = 0.02      # terminal SoC tolerance (2 % SoC)
 TERM_W_LIN:    float = 50.0      # terminal penalty, linear part (strengthened)
 TERM_W_QUAD:   float = 800.0     # terminal penalty, quadratic (strengthened)
@@ -211,10 +218,13 @@ class EMSEnv(gym.Env):
         reward_scale: float = REWARD_SCALE,
         lambda_soc: float = LAMBDA_SOC,
         soc_deadband: float = SOC_DEADBAND,
-        eq_factor: float = 0.15,   # Discharge equivalence factor (asymmetric reward).
-                                   # Regen always uses eq=1.0 (full credit).
-                                   # 0.15 makes electric assist very cheap vs engine,
-                                   # fixing the local optimum where agent avoided motor.
+        eq_factor: float = 1.0,    # Equivalence factor for battery energy in the
+                                   # reward. 1.0 == report-grade: the per-step reward
+                                   # then telescopes EXACTLY to (minus) v_ce_equiv, so
+                                   # the training objective == the true objective.
+                                   # (The old asymmetric 0.15 discharge / 1.0 regen
+                                   # scheme rewarded battery THROUGHPUT and misranked
+                                   # policies — removed.)
     ) -> None:
         super().__init__()
         if fast_interp:
@@ -228,6 +238,7 @@ class EMSEnv(gym.Env):
 
         self.reward_scale = float(reward_scale)
         self.lambda_soc = float(lambda_soc)
+        self.lambda_soc_lin = float(LAMBDA_SOC_LIN)
         self.soc_deadband = float(soc_deadband)
         # Training-time ECMS equivalence factor: scales the PER-STEP battery
         # energy cost in the reward only. 1.0 == report-grade factor (used in
@@ -238,17 +249,7 @@ class EMSEnv(gym.Env):
         # so evaluation against the benchmark stays on the true fuel figure.
         self.eq_factor = float(eq_factor)
 
-        # 2D action: [a_ce, a_u]
-        #   a_ce < 0  -> engine OFF (state_CE=0, full electric, guaranteed fuel=0)
-        #   a_ce >= 0 -> engine ON  (state_CE=1, torque split via a_u)
-        #   a_u ∈ [-1,1] -> motor torque fraction (same as original single action)
-        # Engine on/off is now a DEDICATED dimension → SAC explores it 50% of time
-        # vs the 8% it had when engine-off was buried at the edge of 1 action.
-        self.action_space = spaces.Box(
-            low=np.array([-1.0, -1.0], dtype=np.float32),
-            high=np.array([ 1.0,  1.0], dtype=np.float32),
-            dtype=np.float32,
-        )
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=(9 + N_GEARS_ONEHOT,), dtype=np.float32
         )
@@ -329,12 +330,7 @@ class EMSEnv(gym.Env):
     # ------------------------------------------------------------------ #
 
     def _action_to_torques(self, action: np.ndarray) -> Tuple[float, float, float, str]:
-        """Map 2D agent action to feasible (T_CE, T_EM) commands.
-
-        action[0] = a_ce: engine on/off signal
-            a_ce <  0  -> engine OFF (full electric, zero fuel guaranteed)
-            a_ce >= 0  -> engine ON  (torque split decided by action[1])
-        action[1] = a_u: torque split (same mapping as original single action)
+        """Map agent action to feasible (T_CE, T_EM) commands.
 
         Returns (T_CE_cmd, T_EM_cmd, u_actual, mode).
         """
@@ -342,68 +338,67 @@ class EMSEnv(gym.Env):
         w, dw, T = d["w_MGB"], d["dw_MGB"], d["T_MGB"]
         soc = self._Q_BT / _Q_BT_0
 
-        act = np.asarray(action).reshape(-1)
-        a_ce = float(np.clip(act[0], -1.0, 1.0))   # engine on/off signal
-        a_u  = float(np.clip(act[1], -1.0, 1.0))   # torque split
-        u_raw = U_MIN + (a_u + 1.0) * 0.5 * (U_MAX - U_MIN)
-        engine_off_requested = (a_ce < 0.0)         # negative -> engine off
-
-        # Motor torque envelope at this speed (includes inertia share)
-        t_em_max = _interp1d_linear(_w_EM_max_row, _T_EM_max_arr, w)
-        inertia = abs(_THETA_EM * dw)
-        cap = max(t_em_max - inertia - _EPS_T, 0.0)
-
-        can_discharge = soc > SOC_MIN
-        can_charge = soc < SOC_MAX
-
-        # ---------------- braking / coasting: max recuperation -----------
-        if T < 0.0:
-            if can_charge:
-                t_em = max(T, -cap)          # motor absorbs as much as possible
-            else:
-                t_em = 0.0                   # battery full -> friction brakes
-            t_ce = T - t_em                  # <= 0 -> engine fuel cutoff
-            u = t_em / T if T != 0.0 else 0.0
-            return t_ce, t_em, u, "regen"
+        a = float(np.clip(np.asarray(action).reshape(-1)[0], -1.0, 1.0))
+        u_raw = U_MIN + (a + 1.0) * 0.5 * (U_MAX - U_MIN)
 
         # ---------------- standstill ------------------------------------
         if T == 0.0 or w <= 0.0:
             return 0.0, 0.0, 0.0, "stop"
 
-        # ---------------- traction: agent decides the split --------------
-        t_em_des = u_raw * T
+        # ================================================================
+        # CONTROL-EQUIVALENT linear split (matches the benchmark wiring
+        # control_unit_advanced: T_EM = u*T_MGB, T_CE = (1-u)*T_MGB), with
+        # ONLY feasibility clamps that the benchmark itself also respects.
+        #
+        # Why this changed: the previous version added (a) an "electric snap"
+        # that REDIRECTED the sub-cutoff engine torque onto the motor whenever
+        # (1-u)*T <= T_CUTOFF, and (b) a FORCED maximum-regen override on every
+        # braking step. Both make the plant non-equivalent to the benchmark:
+        # the benchmark's own optimal u-trajectory scored 3.815 (SoC drift to
+        # 55%) through the old interface vs 3.506 through the faithful wiring.
+        # That 0.31 L/100km was an interface artefact handicapping the agent.
+        #
+        # Engine-off still emerges for free: when (1-u)*T <= T_CUTOFF (5 Nm),
+        # combustion_engine's own fuel-cutoff zeroes the fuel WITHOUT moving
+        # torque onto the motor — exactly as in the benchmark.
+        # ================================================================
 
-        # Engine-off via explicit action: a_ce < 0 means agent chose electric.
-        # Also keep the implicit snap for backward compatibility.
-        engine_off_feasible = can_discharge and T <= cap
-        if engine_off_requested and engine_off_feasible:
-            return 0.0, T, 1.0, "electric"
+        # Motor torque envelope at this speed (includes inertia share). This is
+        # the SAME limit the benchmark's _u_motor / _u_regen helpers enforce in
+        # u-space, so it never bites on a feasible benchmark-equivalent command.
+        t_em_max = _interp1d_linear(_w_EM_max_row, _T_EM_max_arr, w)
+        inertia = abs(_THETA_EM * dw)
+        cap = max(t_em_max - inertia - _EPS_T, 0.0)
 
-        # Implicit electric snap: engine torque demand at/below fuel cutoff.
-        if (1.0 - u_raw) * T <= _T_CUTOFF and engine_off_feasible:
-            return 0.0, T, 1.0, "electric"
+        # 1) linear split (no snap, no forced regen — agent owns u on every step)
+        t_em = u_raw * T
 
-        # SoC guards
-        if not can_discharge:
-            t_em_des = min(t_em_des, 0.0)
-        if not can_charge:
-            t_em_des = max(t_em_des, 0.0)
+        # 2) motor envelope clamp (feasibility only)
+        t_em = float(np.clip(t_em, -cap, cap))
 
-        # Motor envelope clamp
-        t_em = float(np.clip(t_em_des, -cap, cap))
+        # 3) battery SoC hard limits (safety masks; rarely bind in-band)
+        #    t_em > 0 => discharge (assist / electric);  t_em < 0 => charge (LPS / regen)
+        if soc <= SOC_MIN:
+            t_em = min(t_em, 0.0)            # empty -> cannot discharge
+        if soc >= SOC_MAX:
+            t_em = max(t_em, 0.0)            # full  -> cannot charge / regen
 
-        # Engine envelope guard: shift any overload back to the motor
+        # 4) engine torque envelope guard: shift any over-torque back to the
+        #    motor when the battery allows (engine cannot exceed its max curve).
         t_ce = T - t_em
-        w_ce = max(w, 105.0)
-        t_ce_max = _interp1d_linear(_w_CE_max_fine, _T_CE_max, w_ce) - abs(_THETA * dw) - _EPS_T
-        if t_ce > t_ce_max:
-            excess = t_ce - t_ce_max
-            if can_discharge:
-                t_em = float(np.clip(t_em + excess, -cap, cap))
-            t_ce = T - t_em
+        if T > 0.0:
+            w_ce = max(w, 105.0)
+            t_ce_max = _interp1d_linear(_w_CE_max_fine, _T_CE_max, w_ce) \
+                - abs(_THETA * dw) - _EPS_T
+            if t_ce > t_ce_max and soc > SOC_MIN:
+                t_em = float(np.clip(t_em + (t_ce - t_ce_max), -cap, cap))
+                t_ce = T - t_em
 
-        u = t_em / T
-        mode = "lps_gen" if t_em < 0 else ("assist" if t_em > 0 else "engine")
+        u = t_em / T if T != 0.0 else 0.0
+        if T < 0.0:
+            mode = "regen"
+        else:
+            mode = "lps_gen" if t_em < 0 else ("assist" if t_em > 0 else "engine")
         return t_ce, t_em, u, mode
 
     # ------------------------------------------------------------------ #
@@ -457,21 +452,26 @@ class EMSEnv(gym.Env):
         fuel_liters = dm_fuel * K_FUEL_L_PER_KG
         elec_liters = dE_batt * K_ELEC_L_PER_J                 # signed, report-grade
 
-        # Asymmetric equivalence factor:
-        #   - Discharge (elec_liters > 0): cheap factor -> agent freely uses motor
-        #   - Regen     (elec_liters < 0): full factor  -> agent values regen credit
-        # This broke the local optimum where agent preferred engine-only because
-        # battery discharge was too expensive relative to engine running cost.
-        if elec_liters >= 0:
-            eff_eq = self.eq_factor          # discharge: cheap (default 0.15)
-        else:
-            eff_eq = 1.0                     # regen: always full credit
-        reward = -self.reward_scale * (fuel_liters + eff_eq * elec_liters)
+        # ALIGNED reward: price battery energy symmetrically with eq_factor
+        # (default 1.0 == report-grade). With a single factor, the per-step
+        # electrical cost telescopes over the episode to exactly the net battery
+        # depletion that the EFC block converts to liters, so the cumulative
+        # reward equals (minus) the true v_ce_equiv objective (up to the terminal
+        # saturation correction below). This removes the spurious "battery
+        # throughput" bonus produced by the old discharge/regen asymmetry.
+        reward = -self.reward_scale * (fuel_liters + self.eq_factor * elec_liters)
 
-        # 4. per-step SoC band penalty (anti battery-borrowing loophole)
+        # 4. per-step SoC restoring penalty (charge-sustaining feedback).
+        #    ROOT-CAUSE FIX: quadratic ALONE with a wide deadband left a large
+        #    dead zone where charging drift went unpunished. Now: small deadband
+        #    + LINEAR + quadratic, so there is a nonzero per-step force pulling
+        #    SoC back to target from ~55% onward (and symmetric below 45%),
+        #    competing directly with the per-step charging reward that caused the
+        #    runaway to ~67%. The 45-55% band stays ~free for bank-and-spend.
         dev = abs(soc - SOC_TARGET)
         excess = max(dev - self.soc_deadband, 0.0)
         reward -= self.lambda_soc * excess * excess
+        reward -= self.lambda_soc_lin * excess
 
         # safety flags should be unreachable thanks to masking; penalize anyway
         if batt_out["stop_uv"] or batt_out["stop_oc"] or mot["overload"] or eng["overload"]:

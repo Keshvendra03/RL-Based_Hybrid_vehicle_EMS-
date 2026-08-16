@@ -116,11 +116,11 @@ class DrivingCycle:
         )
 
         # Columns: time_s, v_ms, dv_ms2, gear, x_tot_m
-        self._time = data[:, 0].astype(np.float64)
-        self._v = data[:, 1].astype(np.float64)
-        self._dv = data[:, 2].astype(np.float64)
-        self._gear = data[:, 3].astype(np.int32)
-        self._x_tot = data[:, 4].astype(np.float64)
+        self._time  = data[:, 0].astype(np.float32)
+        self._v     = data[:, 1].astype(np.float32)
+        self._dv    = data[:, 2].astype(np.float32)
+        self._gear  = data[:, 3].astype(np.int32)
+        self._x_tot = data[:, 4].astype(np.float32)
 
         self._length = len(self._time)
         self._t: int = 0
@@ -158,6 +158,20 @@ class DrivingCycle:
     def length(self) -> int:
         """Total number of timesteps in this cycle."""
         return self._length
+
+    def future_speeds(self, horizon: int) -> np.ndarray:
+        """Causal lookahead: the next `horizon` PRESCRIBED speeds [m/s].
+
+        This is information a real vehicle has from route/navigation/ADAS preview
+        — it is the demanded speed profile, NOT any optimal action. Reading it
+        adds future *demand context* to the observation without injecting any
+        controller knowledge (reward independence preserved) and is cycle-agnostic
+        (means the same local pattern on any cycle). At the end of the cycle the
+        window is clamped to the final speed (no fabrication beyond known data)."""
+        i = self._t
+        idx = np.arange(i + 1, i + 1 + horizon)
+        idx = np.clip(idx, 0, self._length - 1)
+        return self._v[idx].astype(np.float32)
 
     @property
     def progress(self) -> float:
