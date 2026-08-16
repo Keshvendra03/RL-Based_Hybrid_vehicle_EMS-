@@ -1,0 +1,55 @@
+name: Weekly Sync Reminder
+
+on:
+  schedule:
+    # Runs every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # allows manual trigger
+
+jobs:
+  remind:
+    name: Create Weekly Update Reminder
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create reminder issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Check if a reminder issue already exists this week
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'weekly-reminder',
+              state: 'open'
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `📅 Weekly Update Reminder — ${today}`,
+                body: `## Weekly GitHub Sync Checklist\n\n` +
+                      `Hello @${context.repo.owner}! 👋 Time for your weekly update.\n\n` +
+                      `### This week, please review:\n` +
+                      `- [ ] Push any local changes from \`dev\` branch\n` +
+                      `- [ ] Update \`CHANGELOG.md\` with new experiments\n` +
+                      `- [ ] Check if \`dev\` is ready to merge into \`main\`\n` +
+                      `- [ ] Update \`README.md\` with latest results\n` +
+                      `- [ ] Log any new experiment results\n\n` +
+                      `### Quick commands:\n` +
+                      `\`\`\`bash\n` +
+                      `git checkout dev\n` +
+                      `git add .\n` +
+                      `git commit -m "chore: weekly sync"\n` +
+                      `git push\n` +
+                      `\`\`\`\n\n` +
+                      `*Close this issue once done!* ✅`,
+                labels: ['weekly-reminder']
+              });
+            }
