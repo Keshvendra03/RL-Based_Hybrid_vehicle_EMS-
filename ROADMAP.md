@@ -1,5 +1,14 @@
 # Project Roadmap — RL-Based Hybrid Vehicle EMS
 
+> **PHASE 4 (2026-08-26).** Root cause of the residual gap identified as an
+> **exploration deadlock**: engine-OFF at 30-50 Nm sits 3.9-6.7 sigma from the
+> actor mean under the linear action map. Fixed via `modeaware_gated`.
+> **FTP75 is now AT the rule-based benchmark** (mean 3.2460 vs 3.2323, best
+> seed 3.2088 = -0.7%, 3/3 charge-sustaining). **NEDC regressed** (SoC runaway
+> on 2/3 seeds) because at gamma=0.20 the terminal SoC penalty is invisible and
+> per-step k_fb alone cannot contain the extra OFF freedom.
+> Next single experiment: raise `k_fb` on NEDC. See `PHASE4_FINAL_REPORT.md`.
+
 > **PHASE 2 UPDATE (2026-08-26).** The Phase-1 P0 diagnosis (action geometry)
 > was **REJECTED** by Q-landscape forensics and replaced by **P0-REVISED: a
 > reward battery-price unit mismatch** (the reward prices battery energy

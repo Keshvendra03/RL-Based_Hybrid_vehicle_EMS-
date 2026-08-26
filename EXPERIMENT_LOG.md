@@ -399,6 +399,54 @@ This is exactly Pontryagin's result, and why ECMS wins while purely myopic.
 
 ---
 
+## E11 — PHASE 4: exploration-deadlock diagnosis + gated action map
+
+Full write-up: `PHASE4_FINAL_REPORT.md`. Raw: `results/phase4/forensics_NEDC.txt`.
+
+**Root cause found.** P(OFF) under the actor's own Gaussian predicts its OFF
+usage almost exactly (15-30 Nm: 54.4% -> 53.1%; 30-50 Nm: 3.6% -> 0%). Under
+the linear map OFF at 30-50 Nm is +3.87 sigma (g=0.20) / +6.71 sigma (g=0.90)
+from the actor mean -> never proposed -> no buffer data -> critic cannot learn
+Q(OFF) -> no gradient. Self-reinforcing EXPLORATION DEADLOCK.
+
+**Case split confirms gamma is NOT the cause:** g=0.20 is CASE C (dQ -0.0071,
+sign agreement 20%); g=0.90 is CASE A (dQ +0.0020, agreement 85% -- critic
+agrees OFF is better and the actor still refuses). Both refuse OFF.
+
+**Error budget (timestep-aligned, demand verified controller-independent):**
+SAC loses +0.894 L/100km across 15-50 Nm but WINS -0.629 above 50 Nm; net
++0.2598 fuel. The gap is concentrated in 15-35 Nm, partially masked by
+high-torque savings.
+
+**Intervention (one variable: action representation).**
+  * ungated `modeaware`: mechanism CONFIRMED in-band (30-35 Nm OFF 0->12.8%,
+    fuel -0.1129) but REGRESSED overall (3.8775) -- the fixed 40% OFF share is
+    wasted where OFF is infeasible, driving LPS to 100% at >75 Nm (+0.1464).
+  * `modeaware_gated` (reparameterize only where OFF is physically reachable).
+
+**Multi-seed result (n=3/cycle) -- SPLITS BY CYCLE:**
+
+| cycle | gated mean | std | linear mean | delta | Cohen d | CS | viol |
+|---|---|---|---|---|---|---|---|
+| NEDC | 3.8824 | 0.1371 | 3.7727 | +0.1097 WORSE | -1.11 | 1/3 | 0 |
+| FTP75 | **3.2460** | 0.0434 | 3.3821 | **-0.1361 BETTER** | +2.02 | 3/3 | 0 |
+
+FTP75 best seed **3.2088 BEATS rule-based 3.2323 (-0.7%)**; mean +0.4% (CI
+straddles the benchmark). NEDC regressed: seeds 0/2 ran SoC to +11.41/+8.37pp.
+
+**Why the split.** At gamma=0.20 the terminal charge-sustaining penalty is
+INVISIBLE (discount 1.0e-07 ten steps out), so the ONLY SoC control is the
+per-step k_fb costate. The gated map grants more OFF freedom; on NEDC the weak
+per-step control could not contain it and the policy over-charged via LPS.
+FTP75 is immune -- denser braking (REGEN 25.7% vs 17.0%) supplies regen energy
+without LPS charging. This is a gamma x action-map INTERACTION.
+
+**Decision.** Keep gated map for FTP75; keep linear for NEDC pending E12.
+**Next single experiment (E12): raise k_fb** for gated+gamma=0.20 on NEDC.
+Success = 3/3 charge-sustaining AND mean < 3.7727, without hurting FTP75.
+
+---
+
 ## Pending
 
 | id | hypothesis | isolated variable |
