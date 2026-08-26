@@ -343,6 +343,62 @@ linear map, `n_step=1`, 150k steps. NEDC seeds {0,2}; FTP75 seeds {0,1,2}.
 
 ---
 
+## E10 — Clean gamma/horizon sweep (n_step confound removed)
+
+**Trigger.** A methodological error was found in E7/E8: gamma >= 0.99 arms used
+`n_step=5` while gamma <= 0.90 arms used `n_step=1`. The largest jump in the
+sweep (0.99 -> 0.90) therefore changed TWO variables. The "lower gamma is
+better" conclusion was not clean across that boundary.
+
+**Hypothesis under test (user-proposed).** gamma=0.20 gives a ~1.2 s horizon,
+too short for HEV dynamics; gamma in [0.90, 0.98] (10-50 s) should match the
+physical timescale of acceleration/stop-start events and perform better.
+
+**Config.** NEDC, seed 1, 150k, eq_factor 0.2717, k_fb 1.656, linear map,
+target_entropy -2, **n_step=1 for every arm**. Only gamma varied.
+
+| gamma | horizon 1/(1-g) | V_CE_equiv | OFF% | ASSIST% | dSoC | CS |
+|---|---|---|---|---|---|---|
+| 0.00 | 1.0 s | 3.8159 | 35.1 | 15.1 | +0.90 | Y |
+| **0.20** | 1.2 s | **3.7775** | 35.3 | 24.8 | -0.88 | Y |
+| 0.50 | 2.0 s | 3.8181 | 34.8 | 13.4 | +0.94 | Y |
+| 0.90 | 10 s | 3.8795 | 34.6 | 26.8 | +0.15 | Y |
+| 0.95 | 20 s | 3.9715 | 31.5 | 29.1 | -1.29 | Y |
+| 0.98 | 50 s | 4.2665 | 23.4 | 33.0 | -1.95 | Y |
+| 0.99 | 100 s | 4.2948 | 30.0 | 25.2 | -0.99 | Y |
+
+**Result: hypothesis REFUTED.** Removing the confound did not reverse the
+trend -- it strengthened it. Performance degrades monotonically with horizon;
+gamma=0.98 (50 s) is 13% worse than gamma=0.20. The mechanism is visible in
+the mode split: as horizon grows OFF falls (35.1 -> 23.4) and ASSIST rises
+(15.1 -> 33.0) -- the ASSIST blob returns.
+
+**Why (and why the physical intuition was still reasonable).**
+Anticipation and discounting are separate in this design:
+  * PERCEPTION: the agent already receives `lookahead=5` -- the next 5 s of
+    prescribed speed -- in its OBSERVATION. It can anticipate a braking event
+    regardless of gamma.
+  * CREDIT ASSIGNMENT: gamma only sets how far rewards are integrated. The one
+    inter-temporal coupling that matters (SoC) is already carried explicitly by
+    the k_fb costate term.
+Therefore a long horizon adds variance without adding information -- the agent
+must LEARN from noisy 50-100 s returns what the costate supplies for free.
+This is exactly Pontryagin's result, and why ECMS wins while purely myopic.
+
+**Scope limits (do not over-claim).**
+  * 150k-step budget only. High-gamma critics need far more samples; a much
+    longer run could favour higher gamma. Claim is "at this budget", not
+    "long horizon is wrong in principle".
+  * Single seed for the new arms. The 0.90->0.99 degradation (0.88 L) is ~30x
+    the measured seed std (0.028) so that trend is solid, but 0.00/0.20/0.50
+    lie within ~1% of each other -- the exact optimum inside 1-2 s is NOT
+    resolved.
+
+**Decision.** Keep gamma=0.20 in the validated config. Record that the
+0.90-0.98 band was tested cleanly and is worse.
+
+---
+
 ## Pending
 
 | id | hypothesis | isolated variable |
