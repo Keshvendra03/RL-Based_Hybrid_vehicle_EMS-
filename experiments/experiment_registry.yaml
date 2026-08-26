@@ -428,6 +428,41 @@ experiments:
       immune because denser braking (REGEN 25.7%) supplies regen without LPS.
     next: "E12 -- raise k_fb for gated+gamma=0.20 on NEDC (one variable)"
 
+  - id: PHASE5-kfb
+    date: 2026-08-26
+    status: complete
+    hypothesis: "stronger per-step costate feedback stabilises SoC under the gated map"
+    isolated_variable: k_fb
+    frozen: [gamma, n_step, action_map, reward, observation, network, optimizer,
+             replay, batch, gradient_steps, lookahead, training_budget]
+    gamma: 0.20
+    n_step: 1
+    action_map: modeaware_gated
+    training_steps: 148840
+    methodological_note: >
+      Screening was first run on seed 1, which had NOT exhibited the SoC
+      runaway; it wrongly suggested k_fb=1.656 was optimal. Re-testing on the
+      failing seeds (0, 2) reversed the conclusion. Recorded, not hidden.
+    results:
+      NEDC_k2.5: {mean: 3.7666, std: 0.0785, min: 3.6862, max: 3.8431,
+                  seeds: 3, charge_sustaining: "3/3", violations: 0,
+                  vs_linear_ref: -0.0061, verdict: "TIE on fuel, CS SOLVED"}
+      NEDC_k3.0: {mean: 3.7840, std: 0.0483, seeds: 3, charge_sustaining: "3/3",
+                  violations: 0, vs_linear_ref: +0.0113}
+      FTP75_k2.5: {mean: 3.2889, std: 0.0174, min: 3.2699, seeds: 3,
+                   charge_sustaining: "3/3", violations: 0,
+                   vs_gated_k1656: +0.0429, verdict: "MATERIAL REGRESSION"}
+    pareto_conclusion: "optimal k_fb is CYCLE-DEPENDENT: NEDC 2.5, FTP75 1.656"
+    error_budget_NEDC_k2.5: {total: +0.1807, "15-30": +0.3677, "30-50": +0.3705,
+                             ">75": -0.3142, note: "best total; high-torque advantage preserved"}
+    root_cause: >
+      CASE A then deeper. SoC stabilised, fuel unchanged. Critic landscape is
+      BIMODAL (LPS peak Q=-0.0410 @ a=-0.50, valley Q=-0.0594 @ a=+0.10, OFF
+      peak Q=-0.0461 @ a=+0.30). Actor sigma collapsed 0.55 -> 0.194 so the OFF
+      mode is 4-5 sigma away behind the barrier. Unimodal Gaussian policy
+      cannot cross it.
+    next: "E13 -- raise target_entropy to {-0.5, 0.0}, one variable"
+
 planned:
   - id: EXP-C
     hypothesis: "target_entropy -1 forces stochasticity that opposes commitment"

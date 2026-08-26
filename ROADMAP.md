@@ -1,5 +1,14 @@
 # Project Roadmap — RL-Based Hybrid Vehicle EMS
 
+> **PHASE 5 (2026-08-26).** Costate gain `k_fb` identified. NEDC charge
+> sustainability **solved** (1/3 -> 3/3 seeds at k_fb=2.5) with zero violations,
+> but NEDC fuel is **statistically tied** with the linear reference
+> (3.7666 +/- 0.0785 vs 3.7727 +/- 0.0281). Optimal k_fb is **cycle-dependent**
+> (NEDC 2.5, FTP75 1.656). Root cause of the residual gap now measured: the
+> critic landscape is **BIMODAL** (LPS peak / valley / OFF peak) while SAC's
+> policy is unimodal, and actor sigma collapses to 0.194 leaving the OFF mode
+> 4-5 sigma away. Next: raise target_entropy. See `PHASE5_FINAL_REPORT.md`.
+
 > **PHASE 4 (2026-08-26).** Root cause of the residual gap identified as an
 > **exploration deadlock**: engine-OFF at 30-50 Nm sits 3.9-6.7 sigma from the
 > actor mean under the linear action map. Fixed via `modeaware_gated`.

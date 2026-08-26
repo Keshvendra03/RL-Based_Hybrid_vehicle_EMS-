@@ -447,6 +447,61 @@ Success = 3/3 charge-sustaining AND mean < 3.7727, without hurting FTP75.
 
 ---
 
+## E12 — PHASE 5: costate gain k_fb identification
+
+Full write-up: `PHASE5_FINAL_REPORT.md`. Raw: `results/phase5/phase5_NEDC.txt`.
+
+**METHODOLOGICAL ERROR, disclosed.** The screening sweep was run on seed 1 --
+the one seed that did NOT exhibit the SoC runaway. It suggested k_fb=1.656 was
+already optimal. Re-running on the FAILING seeds (0, 2) reversed the finding.
+
+**Correct result: k_fb rescues both diverging seeds.**
+  seed 0: k=1.656 -> 3.9177 (+11.41pp, CS NO) | k=2.5 -> 3.6862 (+0.28pp, CS YES)
+  seed 2: k=1.656 -> 3.9985 (+8.37pp, CS NO)  | k=3.0 -> 3.7803 (+0.73pp, CS YES)
+Both readings are real: on an already-stable seed extra k_fb over-penalises
+(CASE C, OFF collapses 61->0% at 35-50 Nm); on a diverging seed it is corrective.
+
+**Multi-seed (n=3/cycle):**
+| config | NEDC mean | CS | FTP75 mean | CS |
+|---|---|---|---|---|
+| linear ref | 3.7727 +/- 0.0281 | 3/3 | 3.3821 +/- 0.0846 | 3/3 |
+| gated k=1.656 | 3.8824 +/- 0.1371 | 1/3 | **3.2460 +/- 0.0434** | 3/3 |
+| gated k=2.5 | **3.7666 +/- 0.0785** | **3/3** | 3.2889 +/- 0.0174 | 3/3 |
+| gated k=3.0 | 3.7840 +/- 0.0483 | 3/3 | -- | -- |
+
+NEDC k=2.5 vs linear = -0.0061 (0.08 sigma) -> **statistical TIE**. FTP75 k=2.5
+regresses vs k=1.656 (+0.0429, d~1.30) -> section-11 violation.
+**=> optimal k_fb is CYCLE-DEPENDENT** (NEDC 2.5, FTP75 1.656); physically
+consistent with FTP75's denser regen (25.7% vs 17.0%).
+
+**Error budget:** k=2.5 gives the best total (+0.1807 vs linear +0.2598) AND
+preserves the >75 Nm advantage (-0.3142 vs linear -0.3351), which k=1.656 had
+destroyed (+0.1222). Section 25 risk now controlled. Dominant remaining
+deficit: **15-30 Nm (+0.3677)**, benchmark OFF 98.2% vs SAC 58.4%.
+
+**ROOT CAUSE (section 13 CASE A, then deeper).** SoC stabilised but fuel
+unchanged -> action access no longer limiting. Section-18 probe shows the
+critic landscape is **BIMODAL**: at T=30 Nm, LPS peak Q=-0.0410 (a=-0.50),
+VALLEY Q=-0.0594 (a=+0.10), OFF peak Q=-0.0461 (a=+0.30). The gated map moved
+a_off from +0.82 to +0.20, but the actor then converged on the LPS mode and
+shrank sigma 0.55 -> 0.194, so OFF is ~4-5 sigma away AGAIN behind a
+0.0184-deep barrier. A unimodal tanh-Gaussian doing local gradient ascent
+cannot cross it.
+
+**First direct evidence that the optimal control law is BIMODAL while SAC's
+policy class is unimodal** -- confirming, by measurement, the bang-bang
+hypothesis raised and left unconfirmed in Phase 1.
+
+**Status:** LEVEL 1 PASS (0 violations), LEVEL 2 PASS (NEDC CS 1/3 -> 3/3),
+**LEVEL 3 NOT MET** (fuel tied). FTP75 remains at benchmark (+0.4%).
+
+**Next single experiment (E13): raise target_entropy** ({-0.5, 0.0}) with
+gated + k_fb=2.5 + gamma=0.20 on NEDC. Success = 15-30 Nm OFF% > 58.4% toward
+98.2% AND NEDC mean < 3.7727 with 3/3 CS. If it fails, the unimodal policy
+class itself is the limitation.
+
+---
+
 ## Pending
 
 | id | hypothesis | isolated variable |
