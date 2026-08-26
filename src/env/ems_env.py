@@ -220,6 +220,66 @@ K_ELEC_L_PER_J:  float = _EFC_GAIN / 3.6e6          # battery J -> equiv liters
 _EPS_T: float = 0.01     # epsilon torque margin (same as rule-based)
 N_GEARS_ONEHOT: int = 7  # gears 0..6
 
+# ===========================================================================
+# ACTION -> u MAPPING  (RL reparameterization layer -- NOT vehicle physics)
+# ===========================================================================
+# "linear" (default) is the original mapping, bit-for-bit unchanged.
+#
+# "modeaware" is a pure REPARAMETERIZATION motivated by a measured defect:
+# engine-OFF requires (1-u)*T_MGB <= T_CUTOFF, i.e. u >= 1 - T_CUTOFF/T_MGB.
+# Under the linear map that OFF region occupies a median of only 12.2% (NEDC)
+# / 9.3% (FTP75) of the action range, is <10% wide on ~half of all traction
+# steps, and -- worse -- its boundary MOVES with torque demand (a_off spans
+# +0.40..+0.89). The benchmarks spend 40-59% of moving time in OFF, so the
+# policy must hold a narrow, state-varying sliver at the action boundary,
+# which SAC's entropy objective actively resists. See RL_DIAGNOSTIC_REPORT.md.
+#
+# The mode-aware map assigns FIXED fractions of the action range to the three
+# traction modes by anchoring the breakpoints on the true OFF boundary:
+#     z in [0,   ZA] -> u in [U_MIN, 0    ]   (LPS / charging)
+#     z in [ZA,  ZB] -> u in [0,     u_thr]   (ASSIST)
+#     z in [ZB,  1 ] -> u in [u_thr, U_MAX]   (engine OFF / pure electric)
+# with z = (a+1)/2 and u_thr = 1 - T_CUTOFF/T_MGB.
+#
+# CONTROL EQUIVALENCE (proved in tests/test_action_mapping.py):
+#   * u(a=-1) == U_MIN and u(a=+1) == U_MAX exactly, for every T.
+#   * strictly monotonic in a  ->  bijective onto [U_MIN, U_MAX].
+#   * the REACHABLE set of u -- hence of (T_CE, T_EM) -- is IDENTICAL.
+# Only the *density* of the action coordinate changes. No plant equation,
+# torque limit, feasibility mask, reward, or benchmark is touched.
+ACTION_MAPS = ("linear", "modeaware")
+ZA_MODEAWARE: float = 0.35   # share of action range for LPS   (u < 0)
+ZB_MODEAWARE: float = 0.60   # ZB-ZA = 25% for ASSIST; 1-ZB = 40% for OFF
+
+
+def map_action_to_u(a: float, t_mgb: float, action_map: str = "linear") -> float:
+    """Map agent action a in [-1,1] to the torque-split factor u.
+
+    Both maps are monotonic bijections [-1,1] -> [U_MIN, U_MAX], so they
+    expose exactly the same physical control authority (see module note).
+    """
+    z = (a + 1.0) * 0.5                      # [0,1]
+    if action_map == "linear":
+        return U_MIN + z * (U_MAX - U_MIN)
+
+    # --- mode-aware ---------------------------------------------------
+    # Braking / sub-cutoff demand has no meaningful OFF boundary (the engine
+    # is already below cutoff for any u < 1), so fall back to the linear map
+    # -- keeps regen behaviour bit-identical to the original environment.
+    if t_mgb <= _T_CUTOFF:
+        return U_MIN + z * (U_MAX - U_MIN)
+
+    u_thr = 1.0 - _T_CUTOFF / t_mgb
+    # keep the three segments strictly ordered and non-degenerate
+    u_thr = float(np.clip(u_thr, 1e-3, U_MAX - 1e-3))
+
+    if z <= ZA_MODEAWARE:                    # LPS: U_MIN -> 0
+        return U_MIN + (0.0 - U_MIN) * (z / ZA_MODEAWARE)
+    if z <= ZB_MODEAWARE:                    # ASSIST: 0 -> u_thr
+        return u_thr * (z - ZA_MODEAWARE) / (ZB_MODEAWARE - ZA_MODEAWARE)
+    # OFF: u_thr -> U_MAX
+    return u_thr + (U_MAX - u_thr) * (z - ZB_MODEAWARE) / (1.0 - ZB_MODEAWARE)
+
 
 class EMSEnv(gym.Env):
     """Gymnasium environment for the parallel mild-HEV energy management task."""
@@ -259,6 +319,10 @@ class EMSEnv(gym.Env):
                                    # metric (v_ce_equiv is still computed from the
                                    # fixed physical EFC block) -- only the training
                                    # signal, same as the SoC penalty already does.
+        action_map: str = "linear",  # "linear" (original, default) or "modeaware".
+                                     # Pure action-coordinate reparameterization;
+                                     # identical reachable u/torque set either way.
+                                     # See ACTION_MAPS note above.
         lookahead: int = 0,        # Number of upcoming prescribed speeds (causal,
                                    # from the drive cycle's own future demand — NOT
                                    # controller knowledge) appended to the
@@ -294,6 +358,9 @@ class EMSEnv(gym.Env):
         # so evaluation against the benchmark stays on the true fuel figure.
         self.eq_factor = float(eq_factor)
         self.k_fb = float(k_fb)
+        if action_map not in ACTION_MAPS:
+            raise ValueError(f"action_map must be one of {ACTION_MAPS}, got {action_map!r}")
+        self.action_map = action_map
 
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         # Base obs = 9 continuous + 7 gear one-hot. Lookahead appends `lookahead`
@@ -411,7 +478,7 @@ class EMSEnv(gym.Env):
         soc = self._Q_BT / _Q_BT_0
 
         a = float(np.clip(np.asarray(action).reshape(-1)[0], -1.0, 1.0))
-        u_raw = U_MIN + (a + 1.0) * 0.5 * (U_MAX - U_MIN)
+        u_raw = map_action_to_u(a, T, self.action_map)
 
         # ---------------- standstill ------------------------------------
         if T == 0.0 or w <= 0.0:
