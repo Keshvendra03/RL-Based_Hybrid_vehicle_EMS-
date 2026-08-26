@@ -343,6 +343,56 @@ experiments:
       - {gamma: 0.50, cycle: FTP75, eq_factor: 0.4981, out: models_expD_g50}
     note: "gamma=0.0 makes Q(s,a) == r(s,a) exactly: pure myopic == ECMS's own decision rule"
 
+  - id: FINAL-VALIDATED
+    date: 2026-08-26
+    git_commit: HEAD
+    status: complete
+    description: "Final multi-seed validated configuration (Phase-2 section 23)"
+    algorithm: SAC
+    action_map: linear
+    gamma: 0.20
+    n_step: 1
+    eq_factor: {NEDC: 0.2717, FTP75: 0.4981}
+    k_fb: 1.656
+    target_entropy: -2
+    gradient_steps: 16
+    train_freq: 64
+    learning_rate: 3.0e-4
+    batch_size: 512
+    replay_size: 300000
+    lookahead: 5
+    obs_clean: false
+    training_steps: 148840
+    seeds: [0, 1, 2]
+    results:
+      NEDC:  {mean: 3.7727, std: 0.0281, min: 3.7543, max: 3.8051,
+              ci95: [3.7409, 3.8045], gap_vs_rule_based_pct: +7.6,
+              charge_sustaining: "3/3", violations: 0,
+              modes: {off: 36.9, assist: 16.1, lps: 29.9, regen: 17.0}}
+      FTP75: {mean: 3.3821, std: 0.0846, min: 3.3265, max: 3.4794,
+              ci95: [3.2864, 3.4778], gap_vs_rule_based_pct: +4.6,
+              charge_sustaining: "2/3", violations: 0,
+              modes: {off: 39.8, assist: 8.5, lps: 26.1, regen: 25.7}}
+    caveat: "Benchmark NOT beaten. target_entropy -2 vs -1 indistinguishable at n=3."
+
+  - id: EXP-B2-FTP75
+    date: 2026-08-26
+    status: complete
+    hypothesis: "close the section-15 gap: reward unit fix alone on FTP75"
+    isolated_variable: eq_factor/k_fb unit fix
+    cycle: FTP75
+    seed: 1
+    gamma: 0.9999
+    n_step: 5
+    eq_factor: 0.4981
+    k_fb: 1.656
+    results: {v_ce_equiv: 4.5023, d_soc_pp: +0.88, charge_sustaining: true,
+              off_pct: 11.5, assist_pct: 27.8, lps_pct: 35.1, violations: 0}
+    interpretation: >
+      Reward fix ALONE at high gamma is WORSE on FTP75 too (4.2072 -> 4.5023),
+      mirroring NEDC (4.1245 -> 4.1782). Confirms the two fixes are coupled:
+      the corrected Hamiltonian is only exploitable once gamma is low.
+
 planned:
   - id: EXP-C
     hypothesis: "target_entropy -1 forces stochasticity that opposes commitment"
