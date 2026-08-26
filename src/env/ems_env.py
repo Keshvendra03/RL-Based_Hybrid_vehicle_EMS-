@@ -319,6 +319,10 @@ class EMSEnv(gym.Env):
                                    # metric (v_ce_equiv is still computed from the
                                    # fixed physical EFC block) -- only the training
                                    # signal, same as the SoC penalty already does.
+        obs_clean: bool = False,   # §21 ablation: drop the two dead observation
+                                   # channels -- v_next (byte-identical to
+                                   # fut_v1 when lookahead>0) and gear_oh6
+                                   # (always 0.0 on both cycles). 20 -> 18 dims.
         action_map: str = "linear",  # "linear" (original, default) or "modeaware".
                                      # Pure action-coordinate reparameterization;
                                      # identical reachable u/torque set either way.
@@ -361,6 +365,7 @@ class EMSEnv(gym.Env):
         if action_map not in ACTION_MAPS:
             raise ValueError(f"action_map must be one of {ACTION_MAPS}, got {action_map!r}")
         self.action_map = action_map
+        self.obs_clean = bool(obs_clean)
 
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         # Base obs = 9 continuous + 7 gear one-hot. Lookahead appends `lookahead`
@@ -433,20 +438,20 @@ class EMSEnv(gym.Env):
             # replace with LOCAL future demand: next `lookahead` prescribed speeds,
             # normalized like the other speed channels. Causal & cycle-agnostic.
             fut = self.cycle.future_speeds(self.lookahead) / 35.0
-            cont = np.array(
-                [
-                    d["w_MGB"] / 300.0,
-                    d["dw_MGB"] / 60.0,
-                    d["T_MGB"] / 150.0,
-                    d["d_T_MGB"] / 80.0,
-                    2.0 * soc - 1.0,
-                    (soc - SOC_TARGET) * 10.0,
-                    d["v"] / 35.0,
-                    d["v_next"] / 35.0,
-                ],
-                dtype=np.float32,
-            )
-            return np.concatenate([cont, fut, gear_onehot])
+            base = [
+                d["w_MGB"] / 300.0,
+                d["dw_MGB"] / 60.0,
+                d["T_MGB"] / 150.0,
+                d["d_T_MGB"] / 80.0,
+                2.0 * soc - 1.0,
+                (soc - SOC_TARGET) * 10.0,
+                d["v"] / 35.0,
+            ]
+            if not self.obs_clean:
+                base.append(d["v_next"] / 35.0)   # duplicate of fut[0]
+            cont = np.array(base, dtype=np.float32)
+            go = gear_onehot[:-1] if self.obs_clean else gear_onehot
+            return np.concatenate([cont, fut, go])
 
         cont = np.array(
             [

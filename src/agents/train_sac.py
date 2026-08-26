@@ -299,6 +299,17 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default="models")
     p.add_argument("--eq-factor", type=float, default=1.0)
+    p.add_argument("--target-entropy", default="auto",
+                   help="SAC target entropy. 'auto' = -dim(A) = -1.0 (SB3 "
+                        "heuristic). More negative permits a more "
+                        "deterministic policy. Phase-2 section 16.")
+    p.add_argument("--obs-clean", action="store_true",
+                   help="drop the 2 dead observation channels (v_next is "
+                        "byte-identical to fut_v1; gear_oh6 is always 0). "
+                        "20 -> 18 dims. Phase-2 section 21 ablation.")
+    p.add_argument("--algo", default="sac", choices=["sac", "td3"],
+                   help="td3 = deterministic policy, no entropy term. "
+                        "Phase-2 section 26 secondary comparison.")
     p.add_argument("--gamma", type=float, default=0.9999,
                    help="discount factor. 0.9999 was justified in-code by the "
                         "need to propagate the TERMINAL SoC signal; that term "
@@ -372,7 +383,8 @@ def main():
     def make_env(cname):
         return EMSEnv(cname, eq_factor=args.eq_factor, lambda_soc=args.lambda_soc,
                       soc_deadband=args.soc_deadband, lookahead=args.lookahead,
-                      k_fb=args.k_fb, action_map=args.action_map)
+                      k_fb=args.k_fb, action_map=args.action_map,
+                      obs_clean=args.obs_clean)
 
     if len(cycle_list) > 1:
         from gymnasium import Wrapper
@@ -400,7 +412,10 @@ def main():
 
     tb_log = None if args.no_tensorboard else str(out_dir / "tb")
 
-    if args.n_step > 1:
+    if args.algo == "td3":
+        from stable_baselines3 import TD3
+        model_cls, buf_cls = TD3, ReplayBuffer
+    elif args.n_step > 1:
         model_cls, buf_cls = NStepSAC, NStepReplayBuffer
     elif args.per:
         model_cls, buf_cls = SACPER, PrioritizedReplayBuffer
@@ -428,7 +443,10 @@ def main():
             gamma=args.gamma,
             train_freq=64,
             gradient_steps=args.gradient_steps,
-            ent_coef="auto",
+            **({} if args.algo == "td3" else dict(
+                ent_coef="auto",
+                target_entropy=("auto" if args.target_entropy == "auto"
+                                else float(args.target_entropy)))),
             policy_kwargs=dict(net_arch=[256, 256]),
             seed=args.seed,
             verbose=0,
