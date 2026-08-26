@@ -157,9 +157,11 @@ def prefill_buffer(model: SAC, env: EMSEnv, n_episodes: int, verbose: bool = Tru
 # --------------------------------------------------------------------------- #
 
 def rollout_deterministic(model: SAC, cycle: str, eq_factor: float = 1.0,
-                           soc_deadband: float = 0.10, lookahead: int = 0) -> dict:
+                           soc_deadband: float = 0.10, lookahead: int = 0,
+                           k_fb: float = 0.0) -> dict:
     """Roll the current policy out greedily; return final metrics."""
-    env = EMSEnv(cycle, eq_factor=eq_factor, soc_deadband=soc_deadband, lookahead=lookahead)
+    env = EMSEnv(cycle, eq_factor=eq_factor, soc_deadband=soc_deadband,
+                 lookahead=lookahead, k_fb=k_fb)
     obs, _ = env.reset()
     while True:
         action, _ = model.predict(obs, deterministic=True)
@@ -209,7 +211,7 @@ class EvalAndCheckpoint(BaseCallback):
 
     def __init__(self, cycles, every_steps: int, out_dir: Path,
                  eq_factor: float, soc_deadband: float, lookahead: int = 0,
-                 verbose: int = 1):
+                 k_fb: float = 0.0, verbose: int = 1):
         super().__init__(verbose)
         # cycles: single cycle name or list (multi-cycle). Model selection uses
         # the MEAN score across all eval cycles -> best CROSS-CYCLE policy.
@@ -219,6 +221,7 @@ class EvalAndCheckpoint(BaseCallback):
         self.eq_factor = eq_factor
         self.soc_deadband = soc_deadband
         self.lookahead = lookahead
+        self.k_fb = k_fb
         self.best = np.inf
         self.history = []
         self.csv_path = out_dir / "eval_history.csv"
@@ -237,7 +240,8 @@ class EvalAndCheckpoint(BaseCallback):
     def _on_step(self) -> bool:
         if self.num_timesteps % self.every == 0:
             finals = [rollout_deterministic(self.model, c, self.eq_factor,
-                                             self.soc_deadband, self.lookahead)
+                                             self.soc_deadband, self.lookahead,
+                                             self.k_fb)
                       for c in self.cycles]
             scores = [score(f) for f in finals]
             s = float(np.mean(scores))
@@ -294,6 +298,14 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default="models")
     p.add_argument("--eq-factor", type=float, default=1.0)
+    p.add_argument("--k-fb", type=float, default=0.0,
+                   help="ECMS-style closed-loop costate feedback on eq_factor: "
+                        "eq_factor_eff = eq_factor + k_fb*(0.5 - soc). 0.0 "
+                        "(default) reproduces the old flat-price behavior "
+                        "exactly. ecms.py's proven charge-sustaining value is "
+                        "8.0 -- see VERIFIED_FACTS.md for why a flat price "
+                        "(k_fb=0) provably cannot hit the SoC target on this "
+                        "plant even for the optimal controller.")
     p.add_argument("--lambda-soc", type=float, default=2.0)
     p.add_argument("--soc-deadband", type=float, default=0.10)
     p.add_argument("--lookahead", type=int, default=5,
@@ -333,7 +345,8 @@ def main():
 
     def make_env(cname):
         return EMSEnv(cname, eq_factor=args.eq_factor, lambda_soc=args.lambda_soc,
-                      soc_deadband=args.soc_deadband, lookahead=args.lookahead)
+                      soc_deadband=args.soc_deadband, lookahead=args.lookahead,
+                      k_fb=args.k_fb)
 
     if len(cycle_list) > 1:
         from gymnasium import Wrapper
@@ -409,6 +422,7 @@ def main():
         eq_factor=args.eq_factor,
         soc_deadband=args.soc_deadband,
         lookahead=args.lookahead,
+        k_fb=args.k_fb,
         verbose=1,
     )
     best_file = out_dir / "best_score.txt"
@@ -416,7 +430,7 @@ def main():
         cb.best = float(best_file.read_text())
 
     print(f"\n[train] {args.timesteps:,} steps  |  run={run_name}  "
-          f"eq_factor={args.eq_factor}  deadband={args.soc_deadband}")
+          f"eq_factor={args.eq_factor}  k_fb={args.k_fb}  deadband={args.soc_deadband}")
     for c in cycle_list:
         print(f"[train] {c}: rule-based benchmark {RULE_BASED_BENCHMARK.get(c,'?')}  "
               f"ECMS target {ECMS_TARGET.get(c,'?')}")
@@ -445,7 +459,8 @@ def main():
     model.save(out_dir / "sac_ems_last")
     model.save_replay_buffer(out_dir / "replay_buffer.pkl")
 
-    finals = [rollout_deterministic(model, c, args.eq_factor, args.soc_deadband, args.lookahead)
+    finals = [rollout_deterministic(model, c, args.eq_factor, args.soc_deadband,
+                                     args.lookahead, args.k_fb)
               for c in cycle_list]
     s = float(np.mean([score(f) for f in finals]))
     if s < cb.best:

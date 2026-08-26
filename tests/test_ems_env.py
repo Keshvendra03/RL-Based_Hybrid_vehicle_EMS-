@@ -22,6 +22,7 @@ import numpy as np
 from src.env import powertrain as pt
 from src.env.ems_env import (
     EMSEnv, _fast_interp2d_linear, K_FUEL_L_PER_KG, K_ELEC_L_PER_J,
+    REWARD_SCALE, SOC_TARGET,
 )
 from src.env.powertrain import (
     _battery_energy, _Q_BT_IC, _RHO_FUEL, _K_CS,
@@ -129,9 +130,51 @@ def test_gym_api():
     print("[5] gymnasium check_env passed  OK")
 
 
+def test_k_fb_costate_feedback(cycle="NEDC"):
+    """k_fb=0 must reproduce the flat-eq_factor reward exactly (regression
+    guard for the pre-existing exact-telescoping property). k_fb != 0 must
+    shift the reward by EXACTLY the algebraic amount the formula in
+    ems_env.py's docstring predicts -- not just 'in the right direction' --
+    and must NOT change the underlying physics (fuel/elec liters), only the
+    reward's battery-price term.
+    """
+    eq_factor = 1.3125
+    k_fb = 8.0
+    forced_soc = 0.40  # below target -> battery should look MORE expensive at k_fb>0
+
+    def make(kfb):
+        env = EMSEnv(cycle, eq_factor=eq_factor, k_fb=kfb, fast_interp=True)
+        obs, _ = env.reset()
+        q = forced_soc * pt._Q_BT_0
+        env._Q_BT = q
+        env._E_prev = _battery_energy(q)
+        return env
+
+    env0 = make(0.0)     # baseline: static price
+    env1 = make(k_fb)    # ECMS-style feedback price
+    action = np.array([0.5], dtype=np.float32)
+
+    _, r0, _, _, info0 = env0.step(action)
+    _, r1, _, _, info1 = env1.step(action)
+
+    # k_fb must not touch the plant: identical commanded torques -> identical
+    # fuel/elec decomposition regardless of the reward's pricing term.
+    assert abs(info0["fuel_liters_step"] - info1["fuel_liters_step"]) < 1e-15
+    assert abs(info0["elec_liters_step"] - info1["elec_liters_step"]) < 1e-15
+    assert info0["mode"] == info1["mode"]
+
+    elec_liters = info0["elec_liters_step"]
+    expected_delta = -REWARD_SCALE * (k_fb * (SOC_TARGET - forced_soc)) * elec_liters
+    actual_delta = r1 - r0
+    assert abs(actual_delta - expected_delta) < 1e-8, (actual_delta, expected_delta)
+    print(f"[6] k_fb costate feedback: reward shift matches formula exactly "
+          f"(delta={actual_delta:.6f} == expected {expected_delta:.6f})  OK")
+
+
 if __name__ == "__main__":
     test_fast_interp_exact()
     test_env_wiring_matches_evaluate("NEDC")
     test_random_play_safety("NEDC")
     test_gym_api()
+    test_k_fb_costate_feedback("NEDC")
     print("\nALL ENV VALIDATION TESTS PASSED")

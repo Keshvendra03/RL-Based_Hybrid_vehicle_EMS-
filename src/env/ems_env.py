@@ -96,7 +96,22 @@ REWARD  (dense, every step; minimizes TRUE equivalent fuel)
 The per-step costs are exact decompositions of the final-display metric
 (v_liter / v_ce_equiv): summing the fuel terms reproduces the Tank's
 m_fuel; summing the electrical terms reproduces E_init - E_final. This is
-verified by tests/test_ems_env.py.
+verified by tests/test_ems_env.py. This exact-telescoping property holds
+at k_fb=0 (default); see the k_fb costate-feedback option below.
+
+OPTIONAL: ECMS-STYLE COSTATE FEEDBACK ON eq_factor  (k_fb, default 0.0)
+------------------------------------------------------------------------
+    eq_factor_eff = eq_factor + k_fb * (SOC_TARGET - soc_before)
+
+Mirrors src/baselines/ecms.py's PROVEN closed-loop pricing (k_fb=8.0
+there): battery energy gets more expensive as SoC falls below target and
+cheaper as it rises above. ecms.py's own docstring shows a CONSTANT price
+cannot make this plant charge-sustaining even for the Hamiltonian-optimal
+controller -- k_fb=0 (flat eq_factor) inherits that same limitation as a
+training signal. Non-zero k_fb intentionally breaks the exact-telescoping
+property above (this becomes a shaped training signal); v_ce_equiv itself
+is computed independently from the fixed-efficiency EFC block and is
+unaffected either way.
 """
 
 from __future__ import annotations
@@ -225,6 +240,25 @@ class EMSEnv(gym.Env):
                                    # (The old asymmetric 0.15 discharge / 1.0 regen
                                    # scheme rewarded battery THROUGHPUT and misranked
                                    # policies — removed.)
+        k_fb: float = 0.0,        # ECMS-style closed-loop costate feedback on
+                                   # eq_factor: eq_factor_eff = eq_factor + k_fb *
+                                   # (SOC_TARGET - soc), evaluated at the PRE-decision
+                                   # SoC each step -- exactly mirrors the proven
+                                   # formula in src/baselines/ecms.py (k_fb=8.0 there).
+                                   # Default 0.0 reproduces the old static-price
+                                   # behavior exactly (eq_factor_eff == eq_factor).
+                                   # WHY THIS EXISTS: ecms.py's own docstring proves
+                                   # a CONSTANT lambda cannot make this plant charge-
+                                   # sustaining (the Hamiltonian has a near-vertical
+                                   # SoC-vs-lambda cliff); k_fb closes that loop for
+                                   # the optimal Hamiltonian-minimizing controller,
+                                   # and there is no reason a flat price would work
+                                   # any better as a REWARD signal for an RL policy
+                                   # trying to solve the same charge-sustaining
+                                   # problem. This does NOT change the evaluation
+                                   # metric (v_ce_equiv is still computed from the
+                                   # fixed physical EFC block) -- only the training
+                                   # signal, same as the SoC penalty already does.
         lookahead: int = 0,        # Number of upcoming prescribed speeds (causal,
                                    # from the drive cycle's own future demand — NOT
                                    # controller knowledge) appended to the
@@ -259,6 +293,7 @@ class EMSEnv(gym.Env):
         # the reported v_ce_equiv metric or the terminal saturation correction,
         # so evaluation against the benchmark stays on the true fuel figure.
         self.eq_factor = float(eq_factor)
+        self.k_fb = float(k_fb)
 
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
         # Base obs = 9 continuous + 7 gear one-hot. Lookahead appends `lookahead`
@@ -467,6 +502,7 @@ class EMSEnv(gym.Env):
             raise RuntimeError("step() called after episode end; call reset().")
 
         d = self._demand
+        soc_before = self._Q_BT / _Q_BT_0   # pre-decision SoC, for costate feedback
 
         # 1. action -> feasible torque commands
         t_ce_cmd, t_em_cmd, u_act, mode = self._action_to_torques(action)
@@ -490,13 +526,23 @@ class EMSEnv(gym.Env):
         elec_liters = dE_batt * K_ELEC_L_PER_J                 # signed, report-grade
 
         # ALIGNED reward: price battery energy symmetrically with eq_factor
-        # (default 1.0 == report-grade). With a single factor, the per-step
-        # electrical cost telescopes over the episode to exactly the net battery
-        # depletion that the EFC block converts to liters, so the cumulative
-        # reward equals (minus) the true v_ce_equiv objective (up to the terminal
-        # saturation correction below). This removes the spurious "battery
-        # throughput" bonus produced by the old discharge/regen asymmetry.
-        reward = -self.reward_scale * (fuel_liters + self.eq_factor * elec_liters)
+        # (default 1.0 == report-grade). With k_fb=0, eq_factor_eff == eq_factor
+        # and the per-step electrical cost telescopes over the episode to exactly
+        # the net battery depletion that the EFC block converts to liters, so the
+        # cumulative reward equals (minus) the true v_ce_equiv objective (up to
+        # the terminal saturation correction below) -- same as before. This
+        # removes the spurious "battery throughput" bonus produced by the old
+        # discharge/regen asymmetry.
+        #
+        # With k_fb != 0, eq_factor_eff is the ECMS-style costate: battery energy
+        # gets MORE expensive as SoC falls below target and CHEAPER as it rises
+        # above, mirroring src/baselines/ecms.py's proven closed-loop formula.
+        # This intentionally breaks the exact-telescoping property above (the
+        # reward is now a SHAPED training signal, not a running total of the
+        # true metric) -- v_ce_equiv itself is unaffected, since it's computed
+        # separately from the fixed-efficiency EFC block, not from this reward.
+        eq_factor_eff = self.eq_factor + self.k_fb * (SOC_TARGET - soc_before)
+        reward = -self.reward_scale * (fuel_liters + eq_factor_eff * elec_liters)
 
         # 4. per-step SoC restoring penalty (charge-sustaining feedback).
         #    ROOT-CAUSE FIX: quadratic ALONE with a wide deadband left a large
