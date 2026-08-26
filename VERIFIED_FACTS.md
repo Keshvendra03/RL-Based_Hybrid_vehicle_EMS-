@@ -305,6 +305,44 @@ with a CONFIRMED-healthy (not diverging) training process, the next test
 is whether the remaining gap closes with more training time at this same,
 now-stable config, before considering a further hyperparameter change.
 
+### 2026-08-26 (later still) — extended run (500k steps): NEDC frozen early, FTP75 keeps improving
+
+Extended `models_trial_gradstep/{NEDC,FTP75}` via `--resume` from 150k to
+~500k steps (same config: `--eq-factor 1.3125/2.4062 --k-fb 8.0
+--gradient-steps 16`). Gate still FAILs on both, but the underlying story
+differs sharply by cycle:
+
+- **NEDC: best checkpoint frozen at step 65,880** (score 4.3745,
+  v_ce_equiv 4.3702, SoC 52.0%) across all 204 evals up to step 497,760 —
+  **430k additional steps produced zero improvement** on the tracked
+  score. Mode breakdown at the (unchanged) best checkpoint is therefore
+  identical to the 150k snapshot: `OFF=22.9% ASSIST=32.8%`. Late-run
+  quartile SoC: 55.3%→63.0%→65.5%→64.3% (not monotonic, but elevated).
+- **FTP75: best checkpoint advanced to step 296,408** (score 4.2072 —
+  the best V_CE_equiv seen in ANY experiment this session), continuing to
+  improve well past the 150k mark. `OFF=17.4% ASSIST=34.3%` (better than
+  the 150k snapshot's 15.6%/36.6%). Late-run quartile SoC: 54.5%→49.0%→
+  50.5%→52.2% — the closest any run has tracked to ECMS's 50.13% target.
+
+**TensorBoard check across the full 500k (ruling out re-divergence):**
+critic_loss stayed BOUNDED on both cycles the whole way (NEDC 0.8-3.7,
+FTP75 1.5-16.5, oscillating not climbing) — confirms the `gradient_steps=16`
+fix holds over the longer horizon; NEDC's stall is NOT critic instability
+re-emerging.
+
+**New candidate mechanism — cycle-specific entropy collapse:**
+`ent_coef` on NEDC dropped to ~0.049 by step 44k and stayed flat/low
+(0.01-0.03) for the remaining ~450k steps — exploration effectively
+stopped early. `ent_coef` on FTP75, by contrast, **climbed back up**
+over training (0.01 → 0.06 by the end) — SAC's automatic entropy tuner
+kept re-injecting exploration pressure, plausibly why it kept finding
+improvements while NEDC didn't. This is a new, unconfirmed, cycle-specific
+hypothesis (premature exploration collapse), distinct from both prior
+hypotheses (#1 reward pricing, #3 critic instability — both still hold).
+Next test: a different seed on NEDC with the identical config, to check
+whether the step-65,880 freeze is systematic (seed-independent) or this
+seed's particular luck.
+
 *(Next snapshot goes here — append, don't overwrite the ones above.)*
 
 ---

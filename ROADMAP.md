@@ -178,10 +178,21 @@ interleave, etc.) until this is resolved.**
    `VERIFIED_FACTS.md` §E 2026-08-26 (gradient_steps confirmation entry).
    **Current best config: `--eq-factor 1.3125/2.4062 --k-fb 8.0
    --gradient-steps 16`.**
-5. **Next: test whether the remaining gap closes with more training time**
-   at this now-confirmed-stable config, before changing another variable.
-   Extend via `--resume` rather than restarting from scratch (reuses the
-   150k already spent). In progress.
+5. **Extended to 500k steps via `--resume` (2026-08-26) — cycle-specific
+   split result.** Gate still FAILs both, but NOT uniformly: **NEDC's best
+   checkpoint is frozen at step 65,880** (430k further steps produced zero
+   improvement); **FTP75 kept improving to step 296,408**, its best score
+   of the whole investigation (4.207), SoC now hugging ~50-52% in the back
+   half. TensorBoard confirms critic stayed bounded on both throughout (no
+   re-divergence — the gradient_steps=16 fix holds over the longer
+   horizon). New finding: NEDC's `ent_coef` collapsed low (~0.02-0.03) and
+   froze by step 44k; FTP75's climbed back up (0.01→0.06) over training —
+   plausibly why FTP75 kept improving and NEDC didn't. Full numbers:
+   `VERIFIED_FACTS.md` §E 2026-08-26 (extended-run entry).
+   **Next test (in progress): NEDC with a different seed**, same config,
+   to check whether the step-65,880 freeze is systematic (an entropy/
+   exploration issue worth fixing) or this seed's particular luck (in
+   which case the multi-seed requirement in step 7 already covers it).
 6. **Pre-flight gate before ANY full-length run — mandatory, not optional.**
    Run `python -m results.readiness_gate --run <smoke-test-dir>`
    (`results/readiness_gate.py`, added 2026-08-26). It checks, with actual
