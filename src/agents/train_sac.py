@@ -326,6 +326,14 @@ def main():
     p.add_argument("--prefill-eps", type=int, default=0,
                    help="episodes for --prefill-mode constant (ignored if 'none')")
     p.add_argument("--eval-every-eps", type=int, default=2)
+    p.add_argument("--gradient-steps", type=int, default=64,
+                   help="SAC gradient updates per train_freq=64 env steps "
+                        "(default 64 = 1:1, the original setting). Lower "
+                        "values reduce update aggressiveness -- see "
+                        "VERIFIED_FACTS.md 2026-08-26 TensorBoard finding: "
+                        "critic_loss diverges on FTP75 under gamma=0.9999 "
+                        "at the default 64, worth testing whether this is "
+                        "why.")
     p.add_argument("--no-tensorboard", action="store_true",
                    help="disable TensorBoard logging (on by default under <out>/tb)")
     p.add_argument("--resume", action="store_true",
@@ -401,7 +409,7 @@ def main():
             tau=0.005,
             gamma=0.9999,
             train_freq=64,
-            gradient_steps=64,
+            gradient_steps=args.gradient_steps,
             ent_coef="auto",
             policy_kwargs=dict(net_arch=[256, 256]),
             seed=args.seed,

@@ -216,6 +216,48 @@ to hypothesis #2 (SAC entropy) next — `k_fb=8.0` is kept as a real,
 evidenced improvement to carry forward into that investigation rather than
 reverted, since it is not neutral-or-harmful, just insufficient alone.
 
+### 2026-08-26 (later still) — hypothesis #2 tested via TensorBoard: ORIGINAL FORM NOT SUPPORTED, refined to #3
+
+Extracted actual scalar traces from `models/{NEDC,FTP75}/tb/` (existing
+420k+/422k+-step runs, no new training) via
+`tensorboard.backend.event_processing.event_accumulator.EventAccumulator`.
+
+**`ent_coef` (entropy coefficient) actually DECREASED substantially on
+both cycles** — NEDC: 0.157 → 0.023 (first-10% vs. last-10% average);
+FTP75: 0.160 → 0.099. `ent_coef_loss` converged toward ~0 on both,
+meaning SAC's automatic entropy tuning reached a stable point. **This
+does NOT match the original hypothesis #2 ("entropy stays high, blocks
+commitment to action-range boundaries")** — entropy pressure was
+shrinking, not stuck.
+
+**What the data actually shows: critic (value-function) instability,**
+markedly worse on FTP75:
+
+- **NEDC** `train/critic_loss` shape (10 samples across the run):
+  3.39 (step 4,880) → rises to a peak **12.63 (step 278,160)** → recovers
+  back down to **3.16 (step 419,680)**. A temporary instability that
+  appears to be self-correcting by the end of the available data.
+- **FTP75** `train/critic_loss` shape: 13.53 (step 7,504) → climbs
+  almost monotonically to **53.53 (step 382,704)** → only a slight dip to
+  45.61 by step 420,224. **Not stabilized** within the available data —
+  this tracks with `results/figures.py`'s independent "WORSENING quartile
+  trend" flag for FTP75 (not raised for NEDC), giving two independent
+  signals pointing at the same cycle-specific instability.
+- `train/actor_loss` also climbs substantially on both cycles despite
+  `rollout/ep_rew_mean` improving over the same period (NEDC: -129.9→
+  -101.7; FTP75: -347.1→-85.5) — the policy IS learning something, but
+  the critic backing it is not reliably converged, especially on FTP75.
+
+**Refined hypothesis #3 (new, better-evidenced than original #2):**
+critic-loss divergence/instability, likely driven by `gamma=0.9999`
+(deliberately extreme, see `train_sac.py` lines 32-36, chosen so the
+terminal charge-sustaining signal reaches early-episode steps) combined
+with aggressive updates (`train_freq=64, gradient_steps=64` — 64 gradient
+steps per 64 env steps). This is a known SAC pathology, not specific to
+this project. Next test: reduce update aggressiveness (`--gradient-steps`,
+added to `train_sac.py`) as a single-variable smoke test, keeping
+`k_fb=8.0` (kept from hypothesis #1's evidenced partial improvement).
+
 *(Next snapshot goes here — append, don't overwrite the ones above.)*
 
 ---
