@@ -156,3 +156,48 @@ new n-step / lookahead / unguided setup actually reaches or beats the
 rule-based benchmark is an open, in-progress question — see the training
 runs' `eval_history.csv` / `python -m results.figures` output for the
 current answer, not this file.
+
+
+---
+
+## Phase 4 — RL-layer audit findings that touch validated components (2026-08-26)
+
+Recorded here because they concern validated/benchmark components, even though
+**nothing validated was modified**. See `RL_DIAGNOSTIC_REPORT.md` for full
+evidence and `EXPERIMENT_LOG.md` E3 for the measurement.
+
+### VALIDATION CONFLICT (open, not actioned) — benchmark control authority
+
+The advanced rule-based benchmark, run exactly as `evaluate_advanced.py` runs
+it, drives battery SoC to **0.61%** and spends **38 of 1220 NEDC steps below
+5% SoC**. The RL agent is hard-masked at `SOC_MIN = 0.05` in `ems_env.py` and
+can never enter that region, so the two controllers do **not** have equal
+control authority.
+
+**Quantified (EXP-FAIR, measurement only — no physics changed):** re-running
+the benchmark with its `u` routed through the env's masked action path:
+
+| cycle | RAW (published) | MASKED (agent-equal authority) | penalty |
+|---|---|---|---|
+| NEDC | 3.5056 (SoC_min 0.61%) | **3.5792** (SoC_min 4.64%) | +0.0736 (+2.10%) |
+| FTP75 | 3.2323 (SoC_min 13.60%) | 3.2318 | −0.0005 (−0.01%) |
+
+**Conclusion:** the asymmetry is real but small — it explains ~2.1 of the 17.7
+percentage-point NEDC gap and ~0 of the FTP75 gap, so it does **not** account
+for the RL shortfall. **No change made** to the benchmark, to `SOC_MIN`, or to
+any validated file. Going forward, report the authority-equal NEDC figure
+(**3.5792**) alongside the published 3.5056.
+
+### Reward battery-price unit mismatch (RL layer only — no validated file touched)
+
+`elec_liters` in `ems_env.py` is already EFC-converted (it carries
+`EFC_GAIN = 1/(η_BT·η_EM·η_CE·(H_u/3.6e6)·ρ_f)`), so the reward's implicit
+battery price at `eq_factor = 1.0` is **4.8309 fuel-J per battery-J** — not 1.0,
+and not comparable to ECMS's costate. The validated EFC block itself is
+**correct and unchanged**; only the RL reward's use of `eq_factor` was
+mis-scaled. Conversion for RL work:
+`eq_factor_env = λ_ECMS / 4.8309` (NEDC 0.2717, FTP75 0.4981),
+`k_fb_env = k_fb_ECMS / 4.8309` (1.656).
+
+The evaluation metric `v_ce_equiv` is produced by the validated EFC block and
+is unaffected by this reward-side scaling.

@@ -1,5 +1,21 @@
 # Project Roadmap — RL-Based Hybrid Vehicle EMS
 
+> **PHASE 2 UPDATE (2026-08-26).** The Phase-1 P0 diagnosis (action geometry)
+> was **REJECTED** by Q-landscape forensics and replaced by **P0-REVISED: a
+> reward battery-price unit mismatch** (the reward prices battery energy
+> 4.83x above ECMS's proven costate, so the reward-optimal action is engine-OFF
+> in **0.0%** of states vs ECMS's 90.0%). Full evidence:
+> **`RL_DIAGNOSTIC_REPORT.md`**. Per-experiment record: **`EXPERIMENT_LOG.md`**.
+> Machine-readable configs: **`experiments/experiment_registry.yaml`**.
+>
+> **LOCKED — do not modify during RL work:** `src/env/powertrain.py`,
+> `src/env/driving_cycle.py`, `src/baselines/rule_based.py`,
+> `src/baselines/advanced_rule_based.py`, `src/baselines/ecms.py`, the
+> validated env<->plant wiring, and the validated feasibility constraints.
+> *No validated plant/environment physics may be modified during the RL
+> optimization experiments unless a separate validation failure is
+> demonstrated* — report a `VALIDATION CONFLICT` instead of changing them.
+
 This file is the single working checklist for the project. Update it (not
 just chat history) at the end of every session: which step you're on, what
 changed, what the next decision gate is. Do not start a new experiment axis

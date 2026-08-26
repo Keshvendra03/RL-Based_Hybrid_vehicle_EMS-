@@ -1,0 +1,249 @@
+# Experiment Registry — RL-Based Hybrid Vehicle EMS
+#
+# Machine-readable record of every training experiment. An experiment is only
+# VALID if it can be reconstructed from the metadata below.
+#
+# Metric definitions:
+#   v_ce_equiv        : PRIMARY objective, L/100km, from the validated EFC block
+#   d_soc_pp          : (SoC_final - 50%) in percentage points
+#   off/assist/lps/regen_pct : % of MOVING steps (results/evaluate_policy.py)
+# All metrics are produced by the single authoritative evaluator
+#   `python -m results.evaluate_policy` -- no controller-specific shortcuts.
+
+benchmarks:
+  NEDC:
+    advanced_rule_based:
+      v_ce_equiv: 3.5056
+      soc_final: 0.5247
+      d_soc_pp: +2.47
+      soc_min: 0.0061          # VALIDATION CONFLICT: below the agent's SOC_MIN=0.05
+      off_pct: 59.0
+      assist_pct: 0.0
+      lps_pct: 23.8
+      only_pct: 0.2
+      regen_pct: 17.0
+      engine_on_time_s: 209
+      note: "38/1220 steps below 5% SoC -- authority the RL agent is masked from"
+    ecms:
+      v_ce_equiv: 3.1887
+      soc_final: 0.5036
+      d_soc_pp: +0.36
+      lambda_0: 1.3125
+      k_fb: 8.0
+      off_pct: 53.1
+      assist_pct: 0.2
+      lps_pct: 29.7
+      regen_pct: 17.0
+  FTP75:
+    advanced_rule_based:
+      v_ce_equiv: 3.2323
+      soc_final: 0.5386
+      d_soc_pp: +3.86
+      off_pct: 46.3
+      assist_pct: 0.4
+      lps_pct: 22.4
+      only_pct: 5.2
+      regen_pct: 25.7
+    ecms:
+      v_ce_equiv: 2.8097
+      soc_final: 0.5013
+      d_soc_pp: +0.13
+      lambda_0: 2.4062
+      k_fb: 8.0
+      off_pct: 40.4
+      assist_pct: 6.0
+      lps_pct: 27.9
+      regen_pct: 25.7
+
+# Unit conversion between ECMS costate and env eq_factor (RL_DIAGNOSTIC_REPORT §2)
+#   implicit_lambda(eq_factor=1.0) = K_ELEC_L_PER_J / (K_FUEL_L_PER_KG / H_u) = 4.8309
+#   eq_factor_env = lambda_ECMS / 4.8309 ;  k_fb_env = k_fb_ECMS / 4.8309
+reward_unit_conversion:
+  implicit_lambda_at_eq_factor_1: 4.8309
+  eq_factor_matching_ecms:
+    NEDC: 0.2717    # 1.3125 / 4.8309
+    FTP75: 0.4981   # 2.4062 / 4.8309
+  k_fb_matching_ecms: 1.656   # 8.0 / 4.8309
+
+experiments:
+
+  - id: BASELINE-seed0
+    date: 2026-08-26
+    git_commit: 7b42612
+    status: complete
+    hypothesis: "reference run"
+    algorithm: SAC (NStepSAC, n_step=5)
+    cycle: NEDC
+    seed: 0
+    initial_soc: 0.5
+    training_steps: 497760
+    action_map: linear
+    eq_factor: 1.3125
+    k_fb: 8.0
+    gamma: 0.9999
+    target_entropy: -1.0
+    learning_rate: 3.0e-4
+    batch_size: 512
+    replay_size: 300000
+    gradient_steps: 16
+    train_freq: 64
+    lookahead: 5
+    reward_version: "k_fb costate feedback (commit 2a8cdbe)"
+    checkpoint: models_trial_gradstep/NEDC/sac_ems_best
+    results:
+      best_step: 65880
+      v_ce_equiv: 4.3702
+      d_soc_pp: +2.04
+      off_pct: 22.9
+      assist_pct: 32.8
+      lps_pct: 26.6
+      regen_pct: 17.0
+      constraint_violations: 0
+    interpretation: "best checkpoint at 65,880 of 497,760 -- 430k further steps gave zero gain"
+
+  - id: BASELINE-seed1
+    date: 2026-08-26
+    git_commit: 57ea472
+    status: complete
+    hypothesis: "seed sensitivity of the baseline"
+    algorithm: SAC (NStepSAC, n_step=5)
+    cycle: NEDC
+    seed: 1
+    initial_soc: 0.5
+    training_steps: 148840
+    action_map: linear
+    eq_factor: 1.3125
+    k_fb: 8.0
+    gamma: 0.9999
+    target_entropy: -1.0
+    gradient_steps: 16
+    replay_size: 300000
+    lookahead: 5
+    checkpoint: models_trial_seed1/NEDC/sac_ems_best
+    results:
+      best_step: 73200
+      v_ce_equiv: 4.1245
+      v_liter: 4.1245
+      soc_final: 0.5263
+      d_soc_pp: +2.63
+      soc_min: 0.4416
+      off_pct: 29.4
+      assist_pct: 20.6
+      lps_pct: 33.0
+      only_pct: 0.0
+      regen_pct: 17.0
+      constraint_violations: 0
+      battery_throughput_kJ: 2045.7
+      engine_on_time_s: 466
+      total_reward: -45.147
+      action_mean: -0.0079
+      action_std: 0.6437
+      action_sat_pct: 1.56
+    interpretation: "REFERENCE BASELINE for Phase 2. Reproduced exactly by results/evaluate_policy.py."
+
+  - id: BASELINE-FTP75
+    date: 2026-08-26
+    git_commit: 57ea472
+    status: complete
+    algorithm: SAC (NStepSAC, n_step=5)
+    cycle: FTP75
+    seed: 0
+    training_steps: 998032
+    action_map: linear
+    eq_factor: 2.4062
+    k_fb: 8.0
+    gamma: 0.9999
+    gradient_steps: 16
+    checkpoint: models_trial_gradstep/FTP75/sac_ems_best
+    results:
+      best_step: 296408
+      v_ce_equiv: 4.2072
+      soc_final: 0.4856
+      d_soc_pp: -1.44
+      off_pct: 17.4
+      assist_pct: 34.3
+      lps_pct: 22.7
+      regen_pct: 25.7
+      constraint_violations: 0
+    interpretation: "peaked at 296k then COLLAPSED: quintile means 4.540->4.431->4.408->4.704->4.946, SoC 52.3%->32.2%"
+
+  - id: EXP-B
+    date: 2026-08-26
+    git_commit: bd5fe41
+    status: running
+    hypothesis: >
+      P0-OLD: engine-OFF occupies a narrow, state-dependent sliver of the
+      action range; a control-equivalent reparameterization that makes the OFF
+      band a state-invariant 40% will let SAC commit to OFF.
+      NOTE: demoted to a FALSIFICATION CONTROL after P0-REVISED was found --
+      at the current pricing the reward-optimal action is never OFF, so a
+      large gain is no longer predicted.
+    isolated_variable: action_map (linear -> modeaware)
+    algorithm: SAC (NStepSAC, n_step=5)
+    cycles: [NEDC, FTP75]
+    seed: 1
+    training_steps: 150000
+    action_map: modeaware
+    eq_factor: {NEDC: 1.3125, FTP75: 2.4062}
+    k_fb: 8.0
+    gamma: 0.9999
+    target_entropy: -1.0
+    gradient_steps: 16
+    replay_size: 300000
+    lookahead: 5
+    out_dir: models_expB
+    unchanged_vs_baseline: [gamma, target_entropy, eq_factor, k_fb, reward,
+                            replay_size, network, learning_rate, train_freq,
+                            gradient_steps, seed, lookahead, n_step]
+    success_criterion: "OFF >= 40% AND ASSIST <= 10% AND v_ce_equiv < 4.1245"
+
+  - id: EXP-B2
+    date: 2026-08-26
+    git_commit: bd5fe41
+    status: running
+    hypothesis: >
+      P0-REVISED: the reward prices battery energy 4.83x above ECMS's proven
+      optimal costate because elec_liters is already EFC-converted. Unit-
+      matching eq_factor (1.3125/4.8309 = 0.2717) and k_fb (8.0/4.8309 = 1.656)
+      will make the reward-optimal action agree with ECMS (measured offline:
+      7.5% -> 86.9% agreement, OFF 0.0% -> 78.1%) and let SAC learn OFF.
+    isolated_variable: "eq_factor 1.3125->0.2717 and k_fb 8.0->1.656 (one coupled unit fix)"
+    algorithm: SAC (NStepSAC, n_step=5)
+    cycle: NEDC
+    seed: 1
+    training_steps: 150000
+    action_map: linear            # deliberately UNCHANGED, to isolate pricing
+    eq_factor: 0.2717
+    k_fb: 1.656
+    gamma: 0.9999
+    target_entropy: -1.0
+    gradient_steps: 16
+    replay_size: 300000
+    lookahead: 5
+    out_dir: models_expB2
+    unchanged_vs_baseline: [action_map, gamma, target_entropy, reward_structure,
+                            replay_size, network, learning_rate, train_freq,
+                            gradient_steps, seed, lookahead, n_step]
+    success_criterion: "OFF >= 40% AND ASSIST <= 10% AND v_ce_equiv < 4.1245"
+
+planned:
+  - id: EXP-C
+    hypothesis: "target_entropy -1 forces stochasticity that opposes commitment"
+    isolated_variable: "target_entropy in {-1, -2, -3}"
+    precondition: "run only after the winning reward/action config is fixed"
+  - id: EXP-D
+    hypothesis: "gamma=0.9999 justification is void (terminal term = 0.77%)"
+    isolated_variable: "gamma in {0.99, 0.995, 0.999, 0.9999}"
+  - id: EXP-E
+    hypothesis: "eq_eff sign inversion above SoC 66.4% is harmful"
+    isolated_variable: "clip eq_eff to a positive floor"
+  - id: EXP-F
+    hypothesis: "replay 300k (vs SB3 default 1M) causes late-run degradation"
+    isolated_variable: "buffer_size 300000 -> 1000000"
+  - id: EXP-FAIR
+    hypothesis: "part of the gap is authority, not skill"
+    isolated_variable: "run advanced_rule_based THROUGH the env SoC masks"
+    note: "measurement only, no training"
+  - id: EXP-H
+    hypothesis: "TD3's deterministic policy commits better than SAC's Gaussian"
+    precondition: "only if SAC still trails rule-based after P0-REVISED + C + D"

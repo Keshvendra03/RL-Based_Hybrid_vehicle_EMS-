@@ -5,39 +5,26 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e42dec6b-6dea-4556-bb8c-3f548406fc93" name="Changes" comment="Phase 2:- custom Gymnasium environment&#10;&#10;- Added ems_env.py wrapping the Phase 1 powertrain for RL training.&#10;- Defined and implemented action and observation space designs.">
-      <change afterPath="$PROJECT_DIR$/src/agents/finetune_bcreg.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/finetune_sac.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/mode_breakdown_rl.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/nstep_sac.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/per.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/pretrain_bc.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/train_sac.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/train_sac_fix2.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/train_sac_lookahead.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agents/train_sac_nstep.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/baselines/ecms.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/env/ems_env_lookahead.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README_0.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/T_CE_col.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/V_CE_map.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/check_paths.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/agents/Networks.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/agents/replay_buffer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/agents/sac.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/check_battery_sign.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/check_engine_maps.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/check_motor_maps.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/diagnose_subsystems.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/env/driving_cycle.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/env/driving_cycle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHANGELOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/CHANGELOG.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/VALIDATION.md" beforeDir="false" afterPath="$PROJECT_DIR$/VALIDATION.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/checkpoints.py" beforeDir="false" afterPath="$PROJECT_DIR$/results/checkpoints.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/figures.py" beforeDir="false" afterPath="$PROJECT_DIR$/results/figures.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/evaluate_rl.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agents/evaluate_rl.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/finetune_bcreg.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agents/finetune_bcreg.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/finetune_sac.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agents/finetune_sac.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/mode_breakdown_rl.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agents/mode_breakdown_rl.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/pretrain_bc.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agents/pretrain_bc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/train_sac.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agents/train_sac.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/train_sac_fix2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/train_sac_lookahead.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agents/train_sac_nstep.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/env/ems_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/env/ems_env.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/fix_engine_maps.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/fix_motor_maps.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/full_diagnostic.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/validate_gearbox.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/validate_vehicle.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/teat_env.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/w_CE_row.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/env/ems_env_lookahead.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/env/powertrain.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/env/powertrain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_driving_cycle.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_driving_cycle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_electric_motor.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_electric_motor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_powertrain.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_powertrain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_tank.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_tank.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,28 +64,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python tests.Python tests in test_battery.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.Python tests in test_driving_cycle.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.Python tests in test_electric_motor.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.Python tests in test_powertrain.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.Python tests in test_tank.py.executor&quot;: &quot;Run&quot;,
-    &quot;Python.cc.executor&quot;: &quot;Run&quot;,
-    &quot;Python.check_paths.executor&quot;: &quot;Run&quot;,
-    &quot;Python.data od npz.executor&quot;: &quot;Run&quot;,
-    &quot;Python.evaluate.executor&quot;: &quot;Run&quot;,
-    &quot;Python.fix_motor_maps.executor&quot;: &quot;Run&quot;,
-    &quot;Python.powertrain.executor&quot;: &quot;Run&quot;,
-    &quot;Python.teat_env.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test_driving_cycle.executor&quot;: &quot;Run&quot;,
-    &quot;Python.vehicle_dynamics.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/kesh1/PycharmProjects/RL-Based_Hybrid_vehicle_EMS/data/maps&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python tests.Python tests in test_battery.py.executor": "Run",
+    "Python tests.Python tests in test_driving_cycle.py.executor": "Run",
+    "Python tests.Python tests in test_electric_motor.py.executor": "Run",
+    "Python tests.Python tests in test_powertrain.py.executor": "Run",
+    "Python tests.Python tests in test_tank.py.executor": "Run",
+    "Python.cc.executor": "Run",
+    "Python.check_paths.executor": "Run",
+    "Python.data od npz.executor": "Run",
+    "Python.evaluate.executor": "Run",
+    "Python.fix_motor_maps.executor": "Run",
+    "Python.powertrain.executor": "Run",
+    "Python.teat_env.executor": "Run",
+    "Python.test_driving_cycle.executor": "Run",
+    "Python.vehicle_dynamics.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "dev",
+    "last_opened_file_path": "C:/Users/kesh1/PycharmProjects/RL-Based_Hybrid_vehicle_EMS/data/maps"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\kesh1\PycharmProjects\RL-Based_Hybrid_vehicle_EMS\data\maps" />
