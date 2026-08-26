@@ -1,6 +1,13 @@
 """
 finetune_sac.py
 ===============
+GUIDED / LEGACY — not part of the default unguided pipeline (see
+train_sac.py's module docstring). Kept only for reference/comparison; not
+invoked by any current workflow. NOTE: its call to EvalAndCheckpoint(...) is
+missing the now-required eq_factor/soc_deadband arguments (this predates the
+train_sac.py consolidation and was never updated) -- treat this script as
+broken until that call site is fixed, if it's ever needed again.
+
 Fine-tune the behaviourally-cloned SAC policy WITHOUT destroying it.
 
 Naive SAC fine-tuning of a cloned actor collapses immediately: the critic

@@ -45,6 +45,13 @@ from src.env.ems_env import EMSEnv
 from src.env.powertrain import _T_CUTOFF
 
 
+def _infer_lookahead(model: SAC) -> int:
+    """A checkpoint's observation-space width tells us the lookahead window
+    it was trained with (16-dim = lookahead 0; 15+n = lookahead n)."""
+    obs_dim = int(model.observation_space.shape[0])
+    return 0 if obs_dim <= 16 else obs_dim - 15
+
+
 def classify_rollout(model: SAC, cycle: str) -> dict:
     """Deterministic greedy rollout; tag every moving step into one mode.
 
@@ -52,7 +59,7 @@ def classify_rollout(model: SAC, cycle: str) -> dict:
     agent ACTUALLY commanded (post-feasibility-masking) is what gets counted —
     not the raw action. This is the true executed behaviour.
     """
-    env = EMSEnv(cycle)
+    env = EMSEnv(cycle, lookahead=_infer_lookahead(model))
     obs, _ = env.reset()
 
     moving = 0
@@ -124,11 +131,13 @@ REF = {
 def main():
     p = argparse.ArgumentParser(description="Mode-by-mode breakdown of trained SAC agent")
     p.add_argument("--cycle", default="NEDC", choices=["NEDC", "FTP75"])
-    p.add_argument("--model", default="models/sac_ems_best",
-                   help="path to the saved SAC model (without .zip)")
+    p.add_argument("--model", default=None,
+                   help="path to the saved SAC model (without .zip). Defaults "
+                        "to models/<cycle>/sac_ems_best (train_sac.py's "
+                        "per-cycle output convention).")
     args = p.parse_args()
 
-    model_path = Path(args.model)
+    model_path = Path(args.model) if args.model else Path("models") / args.cycle / "sac_ems_best"
     if not model_path.with_suffix(".zip").exists():
         raise FileNotFoundError(
             f"No model at {model_path}.zip — point --model at your trained agent."

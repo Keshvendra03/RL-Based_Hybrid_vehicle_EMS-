@@ -1,60 +1,108 @@
 """
 train_sac.py
 ============
-Train a SAC agent on the EMSEnv and benchmark it against the advanced
-rule-based controller.
+Single canonical entry point for training a SAC agent on EMSEnv, unguided,
+and benchmarking it against the advanced rule-based controller / ECMS.
 
-    python -m src.agents.train_sac --cycle NEDC --timesteps 300000
+    python -m src.agents.train_sac --cycle NEDC --timesteps 1500000
 
-Key design decisions
---------------------
-1. Replay-buffer pre-fill (--prefill-eps, default 20):
-   Before gradient updates start, the replay buffer is filled with
-   transitions from a DIVERSE SET of fixed heuristic policies
-   (engine-only, mild-assist, strong-assist, mild-LPS, regen).
-   This is NOT behaviour cloning — the agent never copies these policies.
-   It just starts with richer off-policy data so gradients are informative
-   from the very first update. Pre-fill is cheap (~5 s for 20 episodes).
+This file replaces train_sac_fix2.py / train_sac_nstep.py / train_sac_lookahead.py
+(all deleted — they were near-duplicate forks of this script; keeping several
+divergent copies made it impossible to know which config produced a given
+checkpoint). Everything they offered is available here via flags.
 
-2. gamma = 0.9999 (was 0.999):
-   0.999^1220 = 0.30 — terminal SoC penalty discounted to 30% at episode
-   start. 0.9999^1220 = 0.885 — terminal signal stays visible all episode.
+UNGUIDED BY DESIGN
+-------------------
+There is NO behaviour-cloning and NO benchmark-seeded replay buffer in this
+script (the old `--prefill-mode benchmark`, which seeded the buffer with the
+advanced rule-based controller's own rollouts, has been removed entirely —
+that is guided learning). The only optional pre-fill (`--prefill-mode
+constant`, default OFF) plays a handful of FIXED, arbitrary torque-split
+values (engine-only, half-assist, full-electric, etc.) into the buffer before
+training starts; it never contains a policy or a schedule, only isolated
+(s, a, r, s') tuples spanning the action range, so the critic isn't staring
+at an empty buffer for the first `learning_starts` steps. Default is 0
+episodes: a genuinely blank-slate run.
+`src/agents/pretrain_bc.py` / `finetune_bcreg.py` / `finetune_sac.py` remain
+in the repo as a GUIDED alternative for comparison, but are not part of this
+pipeline and are not invoked here.
 
-3. eq_factor = 1.0 (set in EMSEnv defaults; ALIGNED):
-   With a single equivalence factor the per-step reward telescopes to exactly
-   (minus) the true v_ce_equiv objective, so training optimises the reported
-   metric directly. (An earlier note suggested 0.42 to under-price battery
-   energy; that DE-aligns the reward from the metric and was NOT adopted.)
+WHY THESE HYPERPARAMETERS
+--------------------------
+1. gamma = 0.9999 (not 0.999): episodes are ~1220-1877 steps; 0.999^1220 =
+   0.30 (the terminal charge-sustaining signal is 70% decayed by the time it
+   reaches early-episode transitions), vs 0.9999^1220 = 0.885. The whole
+   reward's terminal SoC term would otherwise be nearly invisible to the
+   critic at the start of the episode.
+2. lookahead (default 5, causal): appends the next 5 PRESCRIBED speeds from
+   the drive cycle (route/ADAS-preview information, not controller
+   knowledge) to the observation, replacing the absolute cycle-progress
+   scalar (a cycle fingerprint that hurts generalization). This is standard
+   partial-observability handling, not guidance: the info comes from the
+   environment's own future demand, never from a controller's action.
+3. n-step returns (default n=5): diagnosed via mode_breakdown_rl.py that
+   trained agents park ~24% of moving time in "engine + small motor assist"
+   where the near-optimal controllers spend ~0% — those two actions are
+   adjacent in action space and differ by a tiny per-step fuel amount, so a
+   1-step TD critic under gamma=0.9999 can't tell them apart. n-step returns
+   inject several real rewards into the bootstrap target, sharpening exactly
+   that ranking. This changes ONLY how existing reward is propagated into the
+   critic target -- it does not touch env/reward/action semantics.
+4. --per switches to Prioritized Experience Replay (Schaul et al., 2016)
+   instead of n-step (the two replay-buffer overrides are mutually exclusive
+   in this script; combine only if you're prepared to verify a merged
+   buffer/algorithm class yourself). PER prioritizes transitions by TD error,
+   which speeds convergence on CPU-bound training. It was implemented
+   (src/agents/per.py) but never wired into any training script before this.
+5. eq_factor = 1.0 (env default): the reward telescopes EXACTLY to (minus)
+   the true v_ce_equiv metric being optimized against the benchmark, so
+   training objective == evaluation objective.
 
-4. SOC_DEADBAND = 0.30 (set in EMSEnv defaults):
-   Free SoC swing of +/-0.30 around target; lets SoC reach the ~0.20 band the
-   bank-and-spend strategy uses without per-step penalty inside the band.
+Realistic targets (tested & proven, src/baselines/ecms.py):
+    NEDC  rule-based 3.506 | ECMS 3.189      FTP75  rule-based 3.232 | ECMS 2.810
+Primary goal: beat the rule-based benchmark. ECMS is a stretch ceiling (its
+lambda is tuned with whole-cycle information a causal controller doesn't
+have, so it isn't a strictly fair target for an online agent).
 
-Realistic target (tested & proven): the charge-sustaining ECMS optimum from
-src/baselines/ecms.py — NEDC 3.189, FTP75 2.810 L/100km. These replace the
-former unsubstantiated "DP ceiling" numbers as the achievable reference.
-
-Model selection is on the TRUE objective: v_ce_equiv + charge-sustaining
-penalty. The best checkpoint is kept separately from the last checkpoint.
+BOOKKEEPING FIX
+----------------
+Checkpoints are written under <out>/<cycle>/ (previously a single shared
+models/ directory was used for different cycles and configs, which is how
+models/best_score.txt ended up describing a checkpoint that had since been
+overwritten by a different, worse run -- the file and the .zip had silently
+drifted apart). best_score.txt is now written next to its checkpoint, in the
+same directory, immediately after the checkpoint save, and a run_config.json
+sidecar records the exact CLI args + git commit that produced it.
 """
 from __future__ import annotations
 
 import argparse
+import json
+import subprocess
 from pathlib import Path
 
 import numpy as np
 from stable_baselines3 import SAC
+from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.callbacks import BaseCallback
 
+from src.agents.nstep_sac import NStepSAC, NStepReplayBuffer
+from src.agents.per import SACPER, PrioritizedReplayBuffer
 from src.env.ems_env import EMSEnv, SOC_TARGET, TERM_TOL
 
+# --------------------------------------------------------------------------- #
+# Tested & proven reference numbers (src/baselines/ecms.py, evaluate_advanced.py)
+# --------------------------------------------------------------------------- #
+RULE_BASED_BENCHMARK = {"NEDC": 3.506, "FTP75": 3.232}
+ECMS_TARGET = {"NEDC": 3.1887, "FTP75": 2.8097}  # proven, charge-sustaining
+
 
 # --------------------------------------------------------------------------- #
-# Heuristic policies for replay-buffer pre-fill
+# Optional (non-guided) replay-buffer pre-fill: fixed, arbitrary torque splits
 # --------------------------------------------------------------------------- #
 
-# Fixed u values → env action a = 2*(u - U_MIN)/(U_MAX - U_MIN) - 1
-_U_MIN, _U_MAX = -0.6, 1.0
+_U_MIN, _U_MAX = -0.85, 1.0  # must match EMSEnv.U_MIN / U_MAX
+
 
 def _u_to_action(u: float) -> np.ndarray:
     a = 2.0 * (u - _U_MIN) / (_U_MAX - _U_MIN) - 1.0
@@ -62,120 +110,56 @@ def _u_to_action(u: float) -> np.ndarray:
 
 
 PREFILL_POLICIES = [
-    ("engine_only",    _u_to_action(0.00)),   # u=0.0 engine only
-    ("mild_assist",    _u_to_action(0.25)),   # u=0.25 mild electric assist
-    ("strong_assist",  _u_to_action(0.60)),   # u=0.6 heavy assist
-    ("full_electric",  _u_to_action(1.00)),   # u=1.0 pure electric (when possible)
-    ("mild_lps",       _u_to_action(-0.20)),  # u=-0.2 mild load-point shift / charge
-    ("strong_lps",     _u_to_action(-0.45)),  # u=-0.45 aggressive charging
+    ("engine_only",   _u_to_action(0.00)),
+    ("mild_assist",   _u_to_action(0.25)),
+    ("strong_assist", _u_to_action(0.60)),
+    ("full_electric", _u_to_action(1.00)),
+    ("mild_lps",      _u_to_action(-0.20)),
+    ("strong_lps",    _u_to_action(-0.60)),
 ]
 
 
 def prefill_buffer(model: SAC, env: EMSEnv, n_episodes: int, verbose: bool = True) -> None:
-    """Fill the SAC replay buffer with diverse heuristic rollouts.
+    """Seed the replay buffer with FIXED, arbitrary torque-split episodes.
 
-    Cycles through PREFILL_POLICIES repeatedly until n_episodes are done.
-    Each episode uses one fixed action — covering a wide range of SoC
-    trajectories so the critic sees varied (s, a, r, s') from step 1.
+    Not guidance: none of these six actions is a policy or a schedule --
+    each episode holds ONE constant action for its whole length, so the
+    buffer only gains isolated (s, a, r, s') coverage of the action range,
+    never a good trajectory to imitate.
     """
     if verbose:
-        print(f"[prefill] filling buffer with {n_episodes} heuristic episodes "
-              f"({len(PREFILL_POLICIES)} policies, cycling)...")
-
+        print(f"[prefill] {n_episodes} fixed-action episodes "
+              f"({len(PREFILL_POLICIES)} actions, cycling)...")
     n_policies = len(PREFILL_POLICIES)
     total_steps = 0
     for ep in range(n_episodes):
-        policy_name, action = PREFILL_POLICIES[ep % n_policies]
+        _, action = PREFILL_POLICIES[ep % n_policies]
         obs, _ = env.reset()
-        ep_steps = 0
         while True:
-            # Add (obs, action, reward, next_obs, done) directly to the buffer
             next_obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
             model.replay_buffer.add(
-                obs          = obs.reshape(1, -1),
-                next_obs     = next_obs.reshape(1, -1),
-                action       = action.reshape(1, -1),
-                reward       = np.array([reward]),
-                done         = np.array([done]),
-                infos        = [info],
-            )
-            obs = next_obs
-            ep_steps += 1
-            total_steps += 1
-            if done:
-                break
-
-    if verbose:
-        buf_size = model.replay_buffer.size()
-        print(f"[prefill] done — {total_steps} transitions in buffer "
-              f"({buf_size} / {model.replay_buffer.buffer_size} capacity used)")
-
-
-def prefill_buffer_benchmark(model: SAC, env: EMSEnv, cycle: str,
-                             n_episodes: int, noise: float = 0.1,
-                             verbose: bool = True) -> None:
-    """Seed the replay buffer with the ADVANCED RULE-BASED controller's own
-    rollouts (+ small Gaussian action noise), instead of constant-u policies.
-
-    Rationale
-    ---------
-    The constant-u prefill only brackets the action space; it never contains a
-    good *schedule*, so with the aligned (eq=1.0) reward SAC can still collapse
-    into the engine-only local optimum. Seeding with the benchmark places
-    ~3.5 L/100km trajectories in the buffer, so the critic has a strong
-    near-optimal basin from the first gradient step. This is NOT behaviour
-    cloning — SAC still explores freely and optimises the true reward; it just
-    starts from informative off-policy data.
-    """
-    from src.baselines.advanced_rule_based import AdvancedController
-
-    if verbose:
-        print(f"[prefill] seeding buffer with {n_episodes} benchmark rollouts "
-              f"(advanced rule-based, noise sigma={noise})...")
-
-    ctrl = AdvancedController(cycle)
-    total_steps = 0
-    for _ in range(n_episodes):
-        obs, _ = env.reset()
-        ctrl.reset()
-        while True:
-            d = env._demand
-            u = ctrl.step(d["w_MGB"], d["dw_MGB"], d["T_MGB"],
-                          d["gear"], env._Q_BT, d["v"])["u"]
-            a = 2.0 * (u - _U_MIN) / (_U_MAX - _U_MIN) - 1.0
-            a = float(np.clip(a + np.random.randn() * noise, -1.0, 1.0))
-            action = np.array([a], dtype=np.float32)
-
-            next_obs, reward, terminated, truncated, info = env.step(action)
-            done = terminated or truncated
-            model.replay_buffer.add(
-                obs      = obs.reshape(1, -1),
-                next_obs = next_obs.reshape(1, -1),
-                action   = action.reshape(1, -1),
-                reward   = np.array([reward]),
-                done     = np.array([done]),
-                infos    = [info],
+                obs=obs.reshape(1, -1), next_obs=next_obs.reshape(1, -1),
+                action=action.reshape(1, -1), reward=np.array([reward]),
+                done=np.array([done]), infos=[info],
             )
             obs = next_obs
             total_steps += 1
             if done:
                 break
-
     if verbose:
-        buf_size = model.replay_buffer.size()
         print(f"[prefill] done — {total_steps} transitions in buffer "
-              f"({buf_size} / {model.replay_buffer.buffer_size} capacity used)")
+              f"({model.replay_buffer.size()} / {model.replay_buffer.buffer_size} capacity)")
 
 
 # --------------------------------------------------------------------------- #
 # Evaluation helpers
 # --------------------------------------------------------------------------- #
 
-def rollout_deterministic(model: SAC, cycle: str, eq_factor: float,
-                           soc_deadband: float) -> dict:
+def rollout_deterministic(model: SAC, cycle: str, eq_factor: float = 1.0,
+                           soc_deadband: float = 0.10, lookahead: int = 0) -> dict:
     """Roll the current policy out greedily; return final metrics."""
-    env = EMSEnv(cycle, eq_factor=eq_factor, soc_deadband=soc_deadband)
+    env = EMSEnv(cycle, eq_factor=eq_factor, soc_deadband=soc_deadband, lookahead=lookahead)
     obs, _ = env.reset()
     while True:
         action, _ = model.predict(obs, deterministic=True)
@@ -190,36 +174,104 @@ def score(final: dict) -> float:
     return final["v_ce_equiv"] + 10.0 * miss
 
 
+def _write_best_score(out_dir: Path, value: float) -> None:
+    """Atomic write so best_score.txt can never describe a half-written or
+    stale checkpoint (previously a plain write left a window where a crash
+    or a differently-configured run could leave the file and the .zip
+    describing two different policies)."""
+    tmp = out_dir / "best_score.txt.tmp"
+    tmp.write_text(str(value))
+    tmp.replace(out_dir / "best_score.txt")
+
+
+def _git_commit() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[2],
+            stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        return "unknown"
+
+
+_EVAL_CSV_FIELDS = ["timesteps", "cycle", "v_liter", "v_ce_equiv", "soc_final",
+                    "cycle_score", "mean_score", "is_best",
+                    "rule_based_benchmark", "ecms_target"]
+
+
 class EvalAndCheckpoint(BaseCallback):
-    def __init__(self, cycle: str, every_steps: int, out_dir: Path,
-                 eq_factor: float, soc_deadband: float, verbose: int = 1):
+    """Periodic deterministic eval + checkpointing.
+
+    Every eval is appended to <out_dir>/eval_history.csv as it happens (not
+    just kept in self.history in memory), specifically so that a run stopped
+    early (e.g. via TaskStop) still leaves an analyzable record on disk --
+    see results/figures.py / results/checkpoints.py for the reader side.
+    """
+
+    def __init__(self, cycles, every_steps: int, out_dir: Path,
+                 eq_factor: float, soc_deadband: float, lookahead: int = 0,
+                 verbose: int = 1):
         super().__init__(verbose)
-        self.cycle       = cycle
-        self.every       = every_steps
-        self.out_dir     = out_dir
-        self.eq_factor   = eq_factor
+        # cycles: single cycle name or list (multi-cycle). Model selection uses
+        # the MEAN score across all eval cycles -> best CROSS-CYCLE policy.
+        self.cycles = cycles if isinstance(cycles, list) else [cycles]
+        self.every = every_steps
+        self.out_dir = out_dir
+        self.eq_factor = eq_factor
         self.soc_deadband = soc_deadband
-        self.best        = np.inf
-        self.history     = []
+        self.lookahead = lookahead
+        self.best = np.inf
+        self.history = []
+        self.csv_path = out_dir / "eval_history.csv"
+        if not self.csv_path.exists():
+            import csv
+            with open(self.csv_path, "w", newline="") as f:
+                csv.DictWriter(f, fieldnames=_EVAL_CSV_FIELDS).writeheader()
+
+    def _append_csv(self, rows: list[dict]) -> None:
+        import csv
+        with open(self.csv_path, "a", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=_EVAL_CSV_FIELDS)
+            for row in rows:
+                w.writerow(row)
 
     def _on_step(self) -> bool:
         if self.num_timesteps % self.every == 0:
-            final = rollout_deterministic(
-                self.model, self.cycle, self.eq_factor, self.soc_deadband)
-            s = score(final)
-            self.history.append((self.num_timesteps, final["v_liter"],
-                                  final["v_ce_equiv"], final["soc_final"], s))
+            finals = [rollout_deterministic(self.model, c, self.eq_factor,
+                                             self.soc_deadband, self.lookahead)
+                      for c in self.cycles]
+            scores = [score(f) for f in finals]
+            s = float(np.mean(scores))
+            self.history.append((self.num_timesteps, s))
             tag = ""
-            if s < self.best:
+            is_best = s < self.best
+            if is_best:
                 self.best = s
                 self.model.save(self.out_dir / "sac_ems_best")
+                _write_best_score(self.out_dir, self.best)
                 tag = "  <-- new best (saved)"
+
+            self._append_csv([
+                {
+                    "timesteps": self.num_timesteps,
+                    "cycle": c,
+                    "v_liter": f["v_liter"],
+                    "v_ce_equiv": f["v_ce_equiv"],
+                    "soc_final": f["soc_final"],
+                    "cycle_score": sc,
+                    "mean_score": s,
+                    "is_best": is_best,
+                    "rule_based_benchmark": RULE_BASED_BENCHMARK.get(c, ""),
+                    "ecms_target": ECMS_TARGET.get(c, ""),
+                }
+                for c, f, sc in zip(self.cycles, finals, scores)
+            ])
+
             if self.verbose:
-                print(f"[eval @ {self.num_timesteps:>7}] "
-                      f"V_liter={final['v_liter']:.3f}  "
-                      f"V_CE_equiv={final['v_ce_equiv']:.3f}  "
-                      f"SoC={final['soc_final']*100:5.1f}%  "
-                      f"score={s:.3f}{tag}")
+                parts = "  ".join(
+                    f"{c}:{f['v_ce_equiv']:.3f}(SoC{f['soc_final']*100:.0f}%)"
+                    for c, f in zip(self.cycles, finals))
+                print(f"[eval @ {self.num_timesteps:>8}] {parts}  "
+                      f"mean_score={s:.3f}{tag}")
         return True
 
 
@@ -229,129 +281,183 @@ class EvalAndCheckpoint(BaseCallback):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--cycle",        default="NEDC", choices=["NEDC", "FTP75"])
-    p.add_argument("--timesteps",    type=int,   default=300_000)
-    p.add_argument("--seed",         type=int,   default=0)
-    p.add_argument("--out",          default="models")
-    p.add_argument("--eq-factor",    type=float, default=1.0,
-                   help="equivalence factor for battery energy in the reward. "
-                        "1.0 == aligned: reward telescopes to (minus) the true "
-                        "v_ce_equiv objective. (The old 0.15 asymmetric value "
-                        "rewarded battery throughput and misranked policies.)")
-    p.add_argument("--lambda-soc",   type=float, default=2.0,
-                   help="per-step SoC-band penalty weight")
-    p.add_argument("--soc-deadband", type=float, default=0.10,
-                   help="free SoC swing ± around target before the per-step "
-                        "penalty kicks in. 0.30 (old) gave no control (SoC locked "
-                        "at 67%%); 0.05 over-controlled (fuel stuck at 3.9 above "
-                        "benchmark). 0.10 bounds SoC while freeing the 45-55%% band "
-                        "for bank-and-spend regen capture.")
-    p.add_argument("--prefill-mode", default="benchmark",
-                   choices=["benchmark", "constant"],
-                   help="'benchmark' seeds the buffer with advanced rule-based "
-                        "rollouts (recommended); 'constant' uses the 6 fixed-u "
-                        "heuristic policies.")
-    p.add_argument("--prefill-eps",  type=int,   default=20,
-                   help="heuristic episodes to pre-fill replay buffer before training "
-                        "(0 = disabled; 20 ≈ 5 s, covers all 6 fixed policies)")
-    p.add_argument("--eval-every-eps", type=int, default=2,
-                   help="print a deterministic eval every N episodes")
-    p.add_argument("--resume",       action="store_true",
-                   help="continue from <out>/sac_ems_last (+ replay buffer)")
+    p.add_argument("--cycle", default="NEDC", choices=["NEDC", "FTP75"])
+    p.add_argument("--cycles", default=None,
+                   help="comma-separated cycles to interleave per episode, e.g. "
+                        "NEDC,FTP75 (overrides --cycle). Round-robins the training "
+                        "cycle each reset for cross-cycle generalization.")
+    p.add_argument("--timesteps", type=int, default=1_500_000,
+                   help="default raised from 300k: at gamma=0.9999 over "
+                        "~1220-1877-step episodes, 300k steps (~245 NEDC "
+                        "episodes) is thin for long-horizon SoC credit "
+                        "assignment from a blank policy.")
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--out", default="models")
+    p.add_argument("--eq-factor", type=float, default=1.0)
+    p.add_argument("--lambda-soc", type=float, default=2.0)
+    p.add_argument("--soc-deadband", type=float, default=0.10)
+    p.add_argument("--lookahead", type=int, default=5,
+                   help="causal upcoming-speed window appended to the "
+                        "observation (0 disables, = original 16-dim obs)")
+    p.add_argument("--n-step", type=int, default=5,
+                   help="n-step return horizon for the critic target. "
+                        "1 = stock single-step SAC. Mutually exclusive with --per.")
+    p.add_argument("--per", action="store_true",
+                   help="use Prioritized Experience Replay instead of n-step "
+                        "returns. Mutually exclusive with --n-step > 1.")
+    p.add_argument("--prefill-mode", default="none", choices=["none", "constant"],
+                   help="'none' (default): blank-slate, no pre-fill at all. "
+                        "'constant': seed the buffer with fixed-action episodes "
+                        "(NOT guidance -- no policy/schedule, see module "
+                        "docstring). The old 'benchmark' mode (seeding with the "
+                        "rule-based controller's rollouts) has been removed.")
+    p.add_argument("--prefill-eps", type=int, default=0,
+                   help="episodes for --prefill-mode constant (ignored if 'none')")
+    p.add_argument("--eval-every-eps", type=int, default=2)
+    p.add_argument("--no-tensorboard", action="store_true",
+                   help="disable TensorBoard logging (on by default under <out>/tb)")
+    p.add_argument("--resume", action="store_true",
+                   help="continue from <out>/<cycle>/sac_ems_last (+ replay buffer)")
     args = p.parse_args()
 
-    out_dir = Path(args.out)
+    if args.n_step > 1 and args.per:
+        raise SystemExit("--n-step > 1 and --per are mutually exclusive in this "
+                          "script (each overrides the replay buffer + train() "
+                          "loop independently; combine only behind a verified "
+                          "merged implementation).")
+
+    cycle_list = [c.strip() for c in args.cycles.split(",")] if args.cycles else [args.cycle]
+    run_name = args.cycle if len(cycle_list) == 1 else "multi_" + "_".join(cycle_list)
+    out_dir = Path(args.out) / run_name
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    env = EMSEnv(args.cycle,
-                 eq_factor=args.eq_factor,
-                 lambda_soc=args.lambda_soc,
-                 soc_deadband=args.soc_deadband)
-    ep_len = env.cycle.length - 1
+    def make_env(cname):
+        return EMSEnv(cname, eq_factor=args.eq_factor, lambda_soc=args.lambda_soc,
+                      soc_deadband=args.soc_deadband, lookahead=args.lookahead)
+
+    if len(cycle_list) > 1:
+        from gymnasium import Wrapper
+
+        class MultiCycle(Wrapper):
+            def __init__(self, cnames):
+                self._envs = [make_env(c) for c in cnames]
+                self._i = 0
+                super().__init__(self._envs[0])
+
+            def reset(self, **kw):
+                self.env = self._envs[self._i % len(self._envs)]
+                self._i += 1
+                return self.env.reset(**kw)
+
+        env = MultiCycle(cycle_list)
+        ep_len = max(e.cycle.length for e in env._envs) - 1
+        print(f"[train] MULTI-CYCLE interleave: {cycle_list}")
+    else:
+        env = make_env(args.cycle)
+        ep_len = env.cycle.length - 1
+
+    print(f"[train] lookahead={args.lookahead}  obs_dim={env.observation_space.shape[0]}  "
+          f"n_step={args.n_step}  per={args.per}")
+
+    tb_log = None if args.no_tensorboard else str(out_dir / "tb")
+
+    if args.n_step > 1:
+        model_cls, buf_cls = NStepSAC, NStepReplayBuffer
+    elif args.per:
+        model_cls, buf_cls = SACPER, PrioritizedReplayBuffer
+    else:
+        model_cls, buf_cls = SAC, ReplayBuffer
 
     if args.resume and (out_dir / "sac_ems_last.zip").exists():
-        model = SAC.load(out_dir / "sac_ems_last", env=env)
+        model = model_cls.load(out_dir / "sac_ems_last", env=env, tensorboard_log=tb_log)
         buf = out_dir / "replay_buffer.pkl"
         if buf.exists():
             model.load_replay_buffer(buf)
-        print(f"[resume] loaded sac_ems_last  "
-              f"(buffer: {model.replay_buffer.size()} transitions)")
+        print(f"[resume] loaded sac_ems_last  (buffer: {model.replay_buffer.size()} transitions)")
     else:
-        model = SAC(
+        extra_buf_kwargs = {}
+        if buf_cls is NStepReplayBuffer:
+            extra_buf_kwargs = dict(n_step=args.n_step, gamma=0.9999)
+        model = model_cls(
             "MlpPolicy",
             env,
-            learning_rate    = 3e-4,
-            buffer_size      = 300_000,
-            learning_starts  = max(2 * ep_len, args.prefill_eps * ep_len),
-            batch_size       = 512,
-            tau              = 0.005,
-            gamma            = 0.9999,   # long episodes: 0.9999^N >> 0.999^N
-            train_freq       = 64,
-            gradient_steps   = 64,
-            ent_coef         = "auto",
-            policy_kwargs    = dict(net_arch=[256, 256]),
-            seed             = args.seed,
-            verbose          = 0,
+            learning_rate=3e-4,
+            buffer_size=300_000,
+            learning_starts=max(2 * ep_len, args.prefill_eps * ep_len),
+            batch_size=512,
+            tau=0.005,
+            gamma=0.9999,
+            train_freq=64,
+            gradient_steps=64,
+            ent_coef="auto",
+            policy_kwargs=dict(net_arch=[256, 256]),
+            seed=args.seed,
+            verbose=0,
+            tensorboard_log=tb_log,
+            replay_buffer_class=buf_cls if buf_cls is not ReplayBuffer else None,
+            replay_buffer_kwargs=extra_buf_kwargs or None,
         )
 
-        # Pre-fill replay buffer with diverse heuristic rollouts BEFORE training.
-        # This is NOT guided learning — SAC explores freely from step 1.
-        # Pre-fill just ensures the critic has seen varied (s, a, r, s')
-        # from the start instead of spending 30+ episodes on random exploration.
-        if args.prefill_eps > 0:
-            if args.prefill_mode == "benchmark":
-                prefill_buffer_benchmark(model, env, args.cycle,
-                                         n_episodes=args.prefill_eps, verbose=True)
-            else:
-                prefill_buffer(model, env, n_episodes=args.prefill_eps, verbose=True)
+        if args.prefill_mode == "constant" and args.prefill_eps > 0:
+            prefill_buffer(model, env if len(cycle_list) == 1 else env._envs[0],
+                           n_episodes=args.prefill_eps, verbose=True)
 
     cb = EvalAndCheckpoint(
-        args.cycle,
-        every_steps  = args.eval_every_eps * ep_len,
-        out_dir      = out_dir,
-        eq_factor    = args.eq_factor,
-        soc_deadband = args.soc_deadband,
-        verbose      = 1,
+        cycle_list,
+        every_steps=args.eval_every_eps * ep_len,
+        out_dir=out_dir,
+        eq_factor=args.eq_factor,
+        soc_deadband=args.soc_deadband,
+        lookahead=args.lookahead,
+        verbose=1,
     )
     best_file = out_dir / "best_score.txt"
     if args.resume and best_file.exists():
         cb.best = float(best_file.read_text())
 
-    print(f"\n[train] {args.timesteps:,} steps  |  cycle={args.cycle}  "
+    print(f"\n[train] {args.timesteps:,} steps  |  run={run_name}  "
           f"eq_factor={args.eq_factor}  deadband={args.soc_deadband}")
-    benchmarks  = {"NEDC": 3.506,  "FTP75": 3.232}
-    # Realistic, TESTED & PROVEN near-optimal target from the ECMS ruler
-    # (src/baselines/ecms.py), charge-sustaining at SoC_end == 50%. This REPLACES
-    # the former "DP ceiling" constants, which had no solver behind them in this
-    # repo. Reproduce with: python -m src.baselines.ecms --cycle NEDC / FTP75
-    ecms_targets = {"NEDC": 3.1887,  "FTP75": 2.8097}   # proven, charge-sustaining
-    ecms_target = ecms_targets.get(args.cycle, "?")
-    benchmark  = benchmarks.get(args.cycle, "?")
-    print(f"[train] Benchmark: {benchmark} L/100km ({args.cycle} advanced rule-based)")
-    print(f"[train] ECMS target (tested & proven, charge-sustaining): {ecms_target} L/100km\n")
+    for c in cycle_list:
+        print(f"[train] {c}: rule-based benchmark {RULE_BASED_BENCHMARK.get(c,'?')}  "
+              f"ECMS target {ECMS_TARGET.get(c,'?')}")
+
+    (out_dir / "run_config.json").write_text(json.dumps(
+        {**vars(args), "git_commit": _git_commit(), "obs_dim": int(env.observation_space.shape[0])},
+        indent=2))
 
     model.learn(
-        total_timesteps    = args.timesteps,
-        callback           = cb,
-        progress_bar       = False,
-        reset_num_timesteps = not args.resume,
+        total_timesteps=args.timesteps,
+        callback=cb,
+        progress_bar=False,
+        reset_num_timesteps=not args.resume,
+        # log_interval is in EPISODES, not steps: SB3's TensorBoard writer only
+        # flushes at dump_logs() calls (every `log_interval` episodes) and on
+        # clean shutdown. A killed/crashed run loses everything buffered since
+        # the last flush -- confirmed by a controlled test where a clean 30k-step
+        # exit produced 6 regular dumps but a run killed externally at 420k
+        # steps had only the FIRST dump (from step 4880) on disk. log_interval=1
+        # minimizes how much is lost if a run is stopped abruptly again; it does
+        # not affect training, only how often already-computed metrics are
+        # written out. eval_history.csv is unaffected either way (synchronous
+        # per-eval file writes, not a buffered background writer).
+        log_interval=1,
     )
     model.save(out_dir / "sac_ems_last")
     model.save_replay_buffer(out_dir / "replay_buffer.pkl")
 
-    # Final evaluation
-    final = rollout_deterministic(model, args.cycle, args.eq_factor, args.soc_deadband)
-    s = score(final)
+    finals = [rollout_deterministic(model, c, args.eq_factor, args.soc_deadband, args.lookahead)
+              for c in cycle_list]
+    s = float(np.mean([score(f) for f in finals]))
     if s < cb.best:
         cb.best = s
         model.save(out_dir / "sac_ems_best")
-    best_file.write_text(str(cb.best))
+    _write_best_score(out_dir, cb.best)
 
-    print(f"\n[final eval] V_liter={final['v_liter']:.3f}  "
-          f"V_CE_equiv={final['v_ce_equiv']:.3f}  "
-          f"SoC={final['soc_final']*100:.1f}%  score={s:.3f}")
-    print(f"\nBest score:  {cb.best:.4f}  (benchmark={benchmark}, ECMS target={ecms_target})")
-    print(f"Saved:       {out_dir / 'sac_ems_best.zip'}")
+    for c, fin in zip(cycle_list, finals):
+        print(f"\n[final eval {c}] V_liter={fin['v_liter']:.3f}  "
+              f"V_CE_equiv={fin['v_ce_equiv']:.3f}  SoC={fin['soc_final']*100:.1f}%")
+    print(f"\nBest mean score: {cb.best:.4f}")
+    print(f"Saved: {out_dir / 'sac_ems_best.zip'}")
 
 
 if __name__ == "__main__":

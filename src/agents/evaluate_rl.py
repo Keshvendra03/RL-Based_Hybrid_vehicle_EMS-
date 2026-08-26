@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 from stable_baselines3 import SAC
@@ -24,12 +25,21 @@ from stable_baselines3 import SAC
 from src.env.ems_env import EMSEnv, SOC_TARGET
 
 # Benchmark fuel economy (advanced rule-based controller, this sandbox's maps)
-BENCHMARK = {"NEDC": 3.5056, "FTP75": None}
+BENCHMARK = {"NEDC": 3.506, "FTP75": 3.232}
+
+
+def _infer_lookahead(model: SAC) -> int:
+    """A checkpoint's observation-space width tells us the lookahead window
+    it was trained with (16-dim = lookahead 0; 15+n = lookahead n) -- avoids
+    the caller having to remember/pass a matching --lookahead flag."""
+    obs_dim = int(model.observation_space.shape[0])
+    return 0 if obs_dim <= 16 else obs_dim - 15
 
 
 def evaluate(model_path: str, cycle: str, verbose: bool = True) -> dict:
     model = SAC.load(model_path)
-    env = EMSEnv(cycle)
+    lookahead = _infer_lookahead(model)
+    env = EMSEnv(cycle, lookahead=lookahead)
     obs, _ = env.reset()
 
     modes = Counter()
@@ -80,9 +90,13 @@ def evaluate(model_path: str, cycle: str, verbose: bool = True) -> dict:
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--cycle", default="NEDC", choices=["NEDC", "FTP75"])
-    p.add_argument("--model", default="models/sac_ems_best")
+    p.add_argument("--model", default=None,
+                   help="path to the saved SAC model (without .zip). Defaults "
+                        "to models/<cycle>/sac_ems_best (train_sac.py's "
+                        "per-cycle output convention).")
     args = p.parse_args()
-    evaluate(args.model, args.cycle)
+    model_path = args.model or str(Path("models") / args.cycle / "sac_ems_best")
+    evaluate(model_path, args.cycle)
 
 
 if __name__ == "__main__":

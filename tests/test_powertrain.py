@@ -33,7 +33,7 @@ A_F      = 2.3       # m^2
 R_W      = 0.288     # m  (0.576/2)
 CW       = 0.31
 MU       = 0.013
-RHO      = 1.2       # kg/m^3
+RHO      = 1.18      # kg/m^3 (Phase-1 MATLAB-validation-corrected value; see README)
 G        = 9.81      # m/s^2
 
 
@@ -162,10 +162,11 @@ def test_f_iner_braking(veh):
 # ---------------------------------------------------------------------------
 
 def test_w_wheel(veh):
-    """w_wheel = v / r_wheel"""
+    """w_wheel = v_a / r_wheel (averaged speed, not instantaneous v)."""
     v = 20.0
     out = veh.step(v=v, dv=0.0)
-    assert abs(out["w_wheel"] - v / R_W) < 1e-6
+    v_a = 0.5 * (v + 0.0)   # fresh fixture: v_prev = 0
+    assert abs(out["w_wheel"] - v_a / R_W) < 1e-6
 
 def test_dw_wheel(veh):
     """dw_wheel = dv / r_wheel"""
@@ -382,19 +383,21 @@ def test_i_gt_values(gear, expected_igt):
 def test_t_mgb_driving_formula():
     """
     Engine->Wheel (Image 3):
-    T_MGB+ = (T_wheel + P_idle / w_wheel) / eta
+    T_MGB+ = (T_wheel + P_idle / w_wheel) / eta / i_gt
+    (wheel-side -> flywheel-side conversion requires dividing by the
+    total gear ratio i_gt; see README "Key Implementation Notes".)
     """
     w, t, gear = 20.0, 100.0, 3
     out = gearbox(w_wheel=w, dw_wheel=0.0, t_wheel=t, gear=gear)
     friction = _P_FRICTION / w
-    expected = (t + friction) / _ETA
+    expected = (t + friction) / _ETA / _i_gt(gear)
     assert abs(out["t_mgb"] - expected) < 1e-6
 
 def test_t_mgb_driving_zero_torque():
     """Even at t_wheel=0 (coasting), friction loss still demands torque."""
     w, gear = 15.0, 2
     out = gearbox(w_wheel=w, dw_wheel=0.0, t_wheel=0.0, gear=gear)
-    expected = (_P_FRICTION / w) / _ETA
+    expected = (_P_FRICTION / w) / _ETA / _i_gt(gear)
     assert abs(out["t_mgb"] - expected) < 1e-6
 
 def test_t_mgb_driving_is_positive(gear=3):
@@ -409,12 +412,12 @@ def test_t_mgb_driving_is_positive(gear=3):
 def test_t_mgb_braking_formula():
     """
     Wheel->Engine (Image 4):
-    T_MGB- = (T_wheel + eta * P_idle / w_wheel) * eta
+    T_MGB- = (T_wheel + eta * P_idle / w_wheel) * eta / i_gt
     """
     w, t, gear = 20.0, -80.0, 3
     out = gearbox(w_wheel=w, dw_wheel=0.0, t_wheel=t, gear=gear)
     friction = _P_FRICTION / w
-    expected = (t + _ETA * friction) * _ETA
+    expected = (t + _ETA * friction) * _ETA / _i_gt(gear)
     assert abs(out["t_mgb"] - expected) < 1e-6
 
 def test_t_mgb_braking_is_negative():
@@ -448,10 +451,10 @@ def test_zero_speed_no_division_error():
 
 def test_very_low_speed_uses_w_min():
     """At w_wheel < w_min, friction term uses w_min as denominator."""
-    w_low = 0.1   # below _W_MIN = 1.0
-    out = gearbox(w_wheel=w_low, dw_wheel=0.0, t_wheel=10.0, gear=1)
+    w_low, gear = 0.1, 1   # below _W_MIN = 1.0
+    out = gearbox(w_wheel=w_low, dw_wheel=0.0, t_wheel=10.0, gear=gear)
     expected_friction = _P_FRICTION / _W_MIN    # uses w_min, not w_low
-    expected_t = (10.0 + expected_friction) / _ETA
+    expected_t = (10.0 + expected_friction) / _ETA / _i_gt(gear)
     assert abs(out["t_mgb"] - expected_t) < 1e-6
 
 
@@ -528,7 +531,8 @@ def test_engine_constants():
     assert abs(_THETA    - 0.2)            < 1e-6
     assert abs(_T_CUTOFF - 5.0)            < 1e-6
     assert abs(_P_CUTOFF - 0.0)            < 1e-6
-    assert abs(_W_UPPER  - 850.0)          < 1e-6
+    # _W_UPPER = w_CE_row.max(), read from data/maps/engine_maps.npz.
+    assert abs(_W_UPPER  - 439.822971502571) < 1e-6
     assert abs(_H_u - 42936779.911374)     < 1.0
     assert abs(_V_d - 1698e-6)             < 1e-12
 
@@ -538,10 +542,14 @@ def test_engine_constants():
 # ---------------------------------------------------------------------------
 
 def test_idle_when_stopped():
-    """w_gear=0, t_gear=0 → is_idle=True, p_ce = P_idle"""
+    """True standstill (w_gear=0) is NOT idle (idle requires 0 < w_gear <=
+    w_idle); it falls through to fuel cutoff instead, so p_ce = 0. See
+    README "Key Implementation Notes": idle and true-standstill are
+    separate cases, only the former holds fuel power at P_CE_idle."""
     out = combustion_engine(w_gear=0.0, dw_gear=0.0, t_gear=0.0)
-    assert out["is_idle"] is True
-    assert abs(out["p_ce"] - _P_CE_IDLE) < 1e-6
+    assert out["is_idle"] is False
+    assert out["is_cutoff"] is True
+    assert abs(out["p_ce"] - _P_CUTOFF) < 1e-6
 
 def test_idle_at_idle_speed():
     """w_gear exactly at idle speed with zero torque → idle"""

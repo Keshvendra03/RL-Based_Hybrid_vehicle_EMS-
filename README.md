@@ -17,12 +17,15 @@ foundation for a custom **Gymnasium environment** to train Deep RL agents
 - [x] **Phase 0:** Project scoping, environment initialization, repo structure.
 - [x] **Phase 1:** Pure-Python powertrain physics implementation, validated
       against the reference Simulink model (NEDC cycle).
-- [ ] **Phase 2:** Custom Gymnasium environment (`ems_env.py`) wrapping the
+- [x] **Phase 2:** Custom Gymnasium environment (`ems_env.py`) wrapping the
       Phase 1 powertrain for RL training; action/observation space design.
-- [ ] **Phase 3:** Training Deep RL Agents (SAC) and logging via
-      TensorBoard.
-- [ ] **Phase 4:** Performance validation and comparative evaluation
-      against the rule-based baselines below.
+- [x] **Phase 3:** SAC training pipeline (PER, n-step, lookahead,
+      checkpointing, TensorBoard logging) built and audited — 211/211 tests
+      pass. See `CHANGELOG.md`.
+- [ ] **Phase 4 (in progress, currently failing):** Train the RL agent to
+      beat the rule-based baselines below. Current runs plateau ~15-40%
+      above benchmark and are not yet charge-sustaining — see
+      **`ROADMAP.md`** for the live status, diagnosis, and next steps.
 
 ### Phase 1 Validation Results (NEDC cycle)
 

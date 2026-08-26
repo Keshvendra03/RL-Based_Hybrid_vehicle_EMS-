@@ -35,7 +35,10 @@ def ftp75():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def test_nedc_length(nedc):
-    assert nedc.length == 1220, f"Expected 1220 timesteps, got {nedc.length}"
+    # NEDC CSV carries one extra trailing row (time_s=length+1, v=0, dv=0,
+    # gear=0) to match MATLAB's sample count; see README "Key Implementation
+    # Notes". 1220 "real" rows + 1 trailing row = 1221.
+    assert nedc.length == 1221, f"Expected 1221 timesteps, got {nedc.length}"
 
 
 def test_ftp75_length(ftp75):
@@ -155,14 +158,17 @@ def test_reset_restores_state(nedc):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def test_done_flag(nedc):
+    """reset() places the cycle at t=0 (not counted as a step); step()
+    then advances t by 1 each call until t == length-1, so exactly
+    length-1 step() calls are needed to first see done=True."""
     nedc.reset()
     done = False
     steps = 0
     while not done:
         _, done = nedc.step()
         steps += 1
-    assert steps == nedc.length, \
-        f"Expected {nedc.length} steps to complete, got {steps}"
+    assert steps == nedc.length - 1, \
+        f"Expected {nedc.length - 1} steps to complete, got {steps}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

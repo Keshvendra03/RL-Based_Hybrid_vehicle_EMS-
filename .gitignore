@@ -4,3 +4,12 @@ __pycache__/
 .pytest_cache/
 .venv/
 *.egg-info/
+
+# train_sac.py run outputs: checkpoints, TensorBoard logs, eval CSVs.
+# These are experiment artifacts, not source -- run_config.json inside
+# each already records the exact CLI args + git commit needed to
+# reproduce them, so the artifacts themselves don't belong in git.
+models/
+models_*/
+saved_models/
+logs/

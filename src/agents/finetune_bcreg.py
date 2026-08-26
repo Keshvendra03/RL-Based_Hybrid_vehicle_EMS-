@@ -1,6 +1,11 @@
 """
 finetune_bcreg.py
 =================
+GUIDED / LEGACY — not part of the default unguided pipeline (see
+train_sac.py's module docstring, which explains why: no behaviour cloning,
+no benchmark-seeded replay buffer). Kept only for reference/comparison; not
+invoked by any current workflow.
+
 BC-anchored online fine-tuning of the cloned SAC policy (TD3+BC style).
 
 Plain SAC fine-tuning of a behaviourally-cloned actor collapses: the critic

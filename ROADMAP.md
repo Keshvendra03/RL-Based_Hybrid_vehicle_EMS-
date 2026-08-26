@@ -1,0 +1,191 @@
+# Project Roadmap — RL-Based Hybrid Vehicle EMS
+
+This file is the single working checklist for the project. Update it (not
+just chat history) at the end of every session: which step you're on, what
+changed, what the next decision gate is. Do not start a new experiment axis
+until the current investigation below is resolved one way or the other.
+
+**Before re-deriving any number, constant, or "does X work" check, look in
+[`VERIFIED_FACTS.md`](VERIFIED_FACTS.md) first.** That file is the
+separate, append-only ledger of everything already confirmed — physics
+constants, locked benchmark numbers, pipeline behavior, and dated training
+snapshots. This file (`ROADMAP.md`) is about *status and what to do next*;
+`VERIFIED_FACTS.md` is about *what is already known and proven*. Keep them
+separate — don't let status/narrative creep back into the facts ledger.
+
+---
+
+## 1. Objective (locked success criteria)
+
+Train a SAC RL agent that controls the ICE/EM torque split in the parallel
+hybrid EMS Gymnasium environment (`src/env/ems_env.py`) such that, on both
+validated driving cycles:
+
+1. **Beats the advanced rule-based baseline** on fuel consumption (L/100km).
+2. **Is charge-sustaining**: final SoC within ~50% ± 2%.
+3. **Generalizes**: a config frozen on one cycle should not collapse on the
+   other (checked, not assumed).
+
+Baselines to beat (locked — do not re-derive, see `VALIDATION.md`):
+
+| Cycle | Rule-based baseline | ECMS stretch target |
+|---|---|---|
+| NEDC  | 3.506 L/100km | 3.1887 |
+| FTP75 | 3.232 L/100km | 2.8097 |
+
+Phase 4 is **done** only when a single frozen hyperparameter config beats
+the rule-based baseline on both cycles simultaneously and is
+charge-sustaining. Beating it on one cycle only is not done.
+
+---
+
+## 2. Phase status
+
+(Supersedes `README.md`'s status checklist, which is stale — it still shows
+Phases 2–4 unchecked despite `CHANGELOG.md` documenting them through v3.1.0.)
+
+| Phase | Status | Evidence |
+|---|---|---|
+| 0 — Scoping, repo structure | Done | — |
+| 1 — Pure-Python powertrain, MATLAB validation | Done, locked | `VALIDATION.md` |
+| 2 — Gymnasium environment | Done | `CHANGELOG.md` [2.0.0] |
+| 3 — SAC pipeline (PER, n-step, lookahead, checkpoint/logging, audit) | Done | `CHANGELOG.md` [3.0.0]/[3.1.0], 211/211 tests pass |
+| **4 — Train agent to beat baseline** | **In progress — currently failing** | see §3 below |
+
+---
+
+## 3. Where we actually are (as of 2026-08-26)
+
+Two long runs are in flight, each targeting 1,500,000 timesteps
+(`--lookahead 5 --n-step 5`, `--prefill-mode none`, blank-slate):
+
+- `models/NEDC` — 420,900 / 1,500,000 steps (~28%)
+- `models/FTP75` — 422,100 / 1,500,000 steps (~28%)
+
+Objective verdict from `python -m results.figures --run models/<cycle>`
+(built into the repo for exactly this purpose — trust it over eyeballing
+the CSV):
+
+- **NEDC**: plateaued ~4.9 L/100km vs. 3.506 benchmark (+~40%). Not
+  charge-sustaining. "ASSIST BLOB" pattern flagged: `OFF=10.5% ASSIST=26.6%
+  LPS=46.0% ONLY=0.0% REGEN=17.0%` (ECMS: `off=53.1% assist=0.2%`).
+- **FTP75**: plateaued ~4.5 L/100km vs. 3.232 benchmark. Quartile trend is
+  **worsening** (Q1 4.468 → Q4 4.517), SoC drifting 47%→56% — mild
+  instability, not just slow convergence. Same ASSIST BLOB pattern:
+  `OFF=12.6% ASSIST=27.4%` (ECMS: `off=40.4% assist=6.0%`).
+
+**Mode terminology (see `VERIFIED_FACTS.md` §G for the full table —
+corrected here 2026-08-26 after an earlier mix-up):** the diagnostic fields
+are `OFF` (engine off / pure electric) and `ASSIST`, NOT `ONLY` (which
+means pure-engine-with-no-motor-use, and being near 0% is *correct*,
+matching both benchmarks). In both cycles the agent's `OFF` time is far
+below ECMS's and its `ASSIST` time is far above — it charges via LPS
+almost as much as or more than ECMS, but then spends that energy in small
+ASSIST increments instead of committing to sustained OFF/EV stretches.
+This is the single blocking failure mode right now.
+
+**Housekeeping distraction risk:** the entire Phase 3 audit (`CHANGELOG.md`
+[3.1.0]) is sitting **uncommitted** in the working tree. `train_sac.py`
+writes `git_commit` into `run_config.json` for provenance — with an dirty
+tree that guarantee is currently meaningless. Fix before launching any more
+experiments.
+
+---
+
+## 4. Root-cause hypotheses for the ASSIST BLOB plateau
+
+Two hypotheses, in the order to test them (cheapest / most concretely
+evidenced first). Full reward-function audit: `VERIFIED_FACTS.md` §F.
+
+**#1 — reward under-prices battery energy (evidenced, test first).**
+`EMSEnv`'s battery-energy price (`eq_factor`, default 1.0) is flat and
+SoC-independent inside a wide ±10% deadband. The project's own ECMS solver
+(`src/baselines/ecms.py`, tested & proven) shows the price actually needed
+for charge-sustaining behavior is `1.3125` (NEDC) / `2.4062` (FTP75), with
+closed-loop SoC feedback (`k_fb=8.0`) — not a flat 1.0. This means the
+agent gets almost no marginal signal on battery use across the 40-60% SoC
+band where a charge-sustaining policy spends most of its time, which would
+independently explain both the failure to commit (no gradient to commit
+on) and the FTP75 SoC drift (battery is genuinely underpriced). **This is
+directly testable with a single CLI flag change, no code edit** — see
+step 1 below.
+
+**#2 — SAC entropy structurally resists boundary actions (unconfirmed,
+needs a TensorBoard trace).** Continuous `Box(-1,1)` action space
+(`src/env/ems_env.py:263`) + `ent_coef="auto"` (`src/agents/train_sac.py:392`)
+may bias the tanh-squashed Gaussian policy away from committing to the
+extremes of the action range, where "pure EV"/"pure engine" live.
+
+These are not mutually exclusive — reward-pricing could be the primary
+driver with entropy as a secondary effect. Test #1 first because it's
+free (existing flag) and grounded in numbers already proven in this repo,
+not a new derivation.
+
+---
+
+## 5. Immediate next steps, in order
+
+**Do not skip ahead. Do not start a new experiment axis (PER, multi-cycle
+interleave, etc.) until this is resolved.**
+
+1. **Commit the Phase 3 audit** currently sitting uncommitted, so
+   `run_config.json` git-commit provenance is meaningful for every
+   experiment from here on. **Still outstanding as of 2026-08-26 — flagged
+   twice now, not yet done. Do this before any full-length run.**
+2. **Test hypothesis #1 (reward pricing)** — cheapest, most concretely
+   evidenced, zero code changes: 150k-step smoke test with `--eq-factor
+   1.3125` on NEDC / `--eq-factor 2.4062` on FTP75 instead of the flat
+   default of 1.0. Check the mode breakdown for `OFF%` rising toward
+   ECMS's and `ASSIST%` falling toward ECMS's (NOT `ONLY%` — see §3 above).
+   - **In progress (2026-08-26):** first attempt was killed mid-run by a
+     session teardown (unrelated to the training script — see
+     `VERIFIED_FACTS.md` §E) at ~46-48% of budget; that partial run's data
+     was inconclusive/mixed (`ASSIST%` got worse on both cycles, `OFF%`
+     barely moved) and is preserved at `models_trial_eqfix_partial_killed/`
+     for reference, not as a result. Relaunched fresh into
+     `models_trial_eqfix/` — awaiting completion.
+   - If this measurably narrows the OFF/ASSIST gap → the reward was
+     under-pricing battery energy. Next: consider the full dynamic
+     SoC-feedback price (`lambda_t = lambda_0 + k_fb*(0.5 - soc)`,
+     mirroring `ecms.py`'s proven `k_fb=8.0`) directly in `ems_env.py`
+     rather than a static per-cycle constant.
+   - If it does nothing → hypothesis #1 is refuted for practical purposes;
+     move to hypothesis #2.
+3. **If #1 doesn't resolve it, inspect TensorBoard** for `models/NEDC` and
+   `models/FTP75` (`tensorboard --logdir models`): entropy coefficient
+   trend, actor loss, action-value distribution. Confirm or reject
+   hypothesis #2 before touching SAC's entropy settings.
+4. **Pre-flight gate before ANY full-length run — mandatory, not optional.**
+   Run `python -m results.readiness_gate --run <smoke-test-dir>`
+   (`results/readiness_gate.py`, added 2026-08-26). It checks, with actual
+   numbers, not a gut call: unit tests pass, git tree is clean, the smoke
+   run reached completion, the OFF/ASSIST gap vs. ECMS is within
+   tolerance, and the SoC quartile trend isn't diverging. Only scale a
+   config up to 1.5M steps if this gate PASSes. One variable changed at a
+   time, always smoke-tested first — never skip straight to a full run on
+   an untested change.
+5. Once a config beats **both** baselines and is charge-sustaining on a
+   single seed, **confirm on 2-3 total seeds before declaring Phase 4
+   done** — everything run so far (baseline and all smoke tests) has been
+   `seed=0` only, and RL training variance can produce a one-off good run
+   that doesn't replicate. Then freeze the hyperparameters, write it up as
+   a new "Phase 4" section in `VALIDATION.md` (same rigor as the existing
+   entries — actual commands run, actual output inspected), and update
+   `README.md`'s status checklist and this file's §2 table.
+6. **Stretch / generalization check**: evaluate the frozen NEDC-trained
+   checkpoint on FTP75 and vice versa, to catch cycle-overfitting before
+   declaring Phase 4 done.
+
+---
+
+## 6. Session-end checklist
+
+Before ending any session that touches training or the pipeline, update:
+
+- [ ] §3 ("Where we actually are") with current step counts / verdicts
+- [ ] §5 with which numbered step you're now on
+- [ ] `CHANGELOG.md` / `VALIDATION.md` if anything got fixed or measured
+- [ ] **`VERIFIED_FACTS.md` §E** with a new dated snapshot if training
+      state changed — append, never overwrite the previous snapshot
+- [ ] Commit working-tree changes (or note explicitly why not, e.g.
+      mid-experiment)

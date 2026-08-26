@@ -71,8 +71,11 @@ class TestMotorConstants:
         assert inv_eta_mot[inv_eta_mot < 10.0].min() > 1.0
 
     def test_t_em_max_curve_values(self):
-        expected = [70., 70., 70., 52., 38., 28., 19., 13., 9.]
-        np.testing.assert_allclose(_T_EM_max_arr, expected, atol=0.5)
+        # Current calibration in data/maps/motor_maps.npz (and its generator
+        # data/maps/motor_maps_data.py) — a uniform 6/7 rescale of an older
+        # 70-Nm-peak draft curve that no longer matches the shipped map.
+        expected = [60., 60., 60., 44.5714, 32.5714, 24., 16.2857, 11.1429, 7.7143]
+        np.testing.assert_allclose(_T_EM_max_arr, expected, atol=1e-3)
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +183,7 @@ class TestModeFlags:
 class TestOverloadDetection:
 
     def test_overload_beyond_rated(self):
-        """T=80 Nm >> T_max(300 rad/s)=38 Nm → overload."""
+        """T=80 Nm >> T_max(300 rad/s)=44.5714 Nm → overload."""
         out = electric_motor(w_gear=300., dw_gear=0., t_gear=80.)
         assert out["overload"] is True
 
@@ -193,8 +196,10 @@ class TestOverloadDetection:
         assert out["overload"] is True
 
     def test_overload_at_high_speed(self):
-        """T_max(600 rad/s)=9 Nm; 15 Nm → overload."""
-        out = electric_motor(w_gear=600., dw_gear=0., t_gear=15.)
+        """T_max(600 rad/s)=16.2857 Nm (w_EM_max_row grid point at index 6,
+        i.e. w=600); 20 Nm → overload. (The original 15 Nm / "9 Nm" example
+        indexed the wrong grid point — 9 Nm is T_max(800), not T_max(600).)"""
+        out = electric_motor(w_gear=600., dw_gear=0., t_gear=20.)
         assert out["overload"] is True
 
 

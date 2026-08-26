@@ -1,6 +1,10 @@
 """
 pretrain_bc.py
 ==============
+GUIDED / LEGACY — not part of the default unguided pipeline (see
+train_sac.py's module docstring). Kept only for reference/comparison; not
+invoked by any current workflow.
+
 Warm-start a SAC agent from the advanced rule-based benchmark.
 
 Beating a well-tuned rule-based EMS from a blank policy is a hard

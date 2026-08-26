@@ -31,7 +31,8 @@ from env.powertrain import (
 # ---------------------------------------------------------------------------
 H_U    = 42_936_779.911374  # J/kg  (diesel lower heating value)
 RHO_F  = 0.843              # kg/L  (diesel density)
-K_CS   = 1.0                # [-]   (cold-start factor, diesel)
+K_CS   = 1.15               # [-]   (cold-start factor; Phase-1 MATLAB-
+                             #        validation-corrected value, see README)
 H      = 1.0                # s     (timestep)
 
 
@@ -57,8 +58,9 @@ class TestTankConstants:
         assert abs(_RHO_FUEL - 0.843) < 1e-9
 
     def test_k_cs(self):
-        """Cold-start factor for diesel = 1.0 (no penalty)."""
-        assert abs(_K_CS - 1.0) < 1e-9
+        """Cold-start factor = 1.15 (confirmed from Simulink "Factor for
+        cold start" Gain block; see README)."""
+        assert abs(_K_CS - 1.15) < 1e-9
 
     def test_h_tank(self):
         """Timestep h = 1.0 s (matches DrivingCycle step size)."""
@@ -215,20 +217,20 @@ class TestTopLevelConversion:
     def test_1e5_conversion_factor(self, tank):
         """
         Unit conversion check: if m_fuel/rho_f = x_tot/1e5 (exactly),
-        then v_liter = 1.0 L/100km.
+        then v_liter = 1.0 * k_cs L/100km (k_cs still applies).
         """
         # Choose x_tot = 1e5 m (=100 km), m_fuel = rho_f kg
-        # Then v = (rho_f/rho_f) / 1e5 * 1e5 = 1.0 L/100km
+        # Then v = (rho_f/rho_f) / 1e5 * 1e5 * k_cs = k_cs L/100km
         # We need m_fuel = rho_f after one step.
         # m_dot_step1 = p * 0.5 * 1 / H_u  → p = 2 * rho_f * H_u
         p_needed = 2.0 * RHO_F * H_U
         out = tank.step(p_fuel=p_needed, x_tot=1e5)
-        assert abs(out["v_liter"] - 1.0) < 1e-6, \
-            f"v_liter = {out['v_liter']:.6f}, expected 1.0"
+        assert abs(out["v_liter"] - K_CS) < 1e-6, \
+            f"v_liter = {out['v_liter']:.6f}, expected {K_CS}"
 
     def test_k_cs_applied(self, tank):
         """
-        Cold-start factor k_cs=1.0 for diesel means no change.
+        Cold-start factor k_cs=1.15 scales up the raw conversion.
         Verify the formula includes it (scaling test).
         """
         out = tank.step(p_fuel=10000.0, x_tot=1000.0)

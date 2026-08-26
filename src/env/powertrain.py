@@ -526,8 +526,8 @@ def combustion_engine(
 #     P_aux added     → P_EM_total = P_EM + P_aux
 #
 #   Image 2 — Maximum torque curve (from motor_maps.mat):
-#     w_EM_max [rad/s]: [  0,  75, 150, 225, 300, 375, 450, 525, 600]
-#     T_EM_max [Nm]   : [ 70,  70,  70,  52,  38,  28,  19,  13,   9]
+#     w_EM_max [rad/s]: [  0, 100, 200, 300, 400, 500, 600, 700, 800]
+#     T_EM_max [Nm]   : [ 60,  60,  60,  44.5714, 32.5714, 24, 16.2857, 11.1429, 7.7143]
 #
 #   Image 3 — Detect overload and overspeed:
 #     Overload  check: T_max(w_EM) − |T_EM| < 0 → flag

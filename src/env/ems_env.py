@@ -225,6 +225,15 @@ class EMSEnv(gym.Env):
                                    # (The old asymmetric 0.15 discharge / 1.0 regen
                                    # scheme rewarded battery THROUGHPUT and misranked
                                    # policies — removed.)
+        lookahead: int = 0,        # Number of upcoming prescribed speeds (causal,
+                                   # from the drive cycle's own future demand — NOT
+                                   # controller knowledge) appended to the
+                                   # observation, replacing the absolute cycle-progress
+                                   # scalar. 0 (default) = original 16-dim observation,
+                                   # unchanged from the pre-lookahead environment.
+                                   # 5 is the validated generalization-safe window
+                                   # (long enough to inform the engine-off/on decision,
+                                   # short enough not to fingerprint the cycle).
     ) -> None:
         super().__init__()
         if fast_interp:
@@ -235,6 +244,8 @@ class EMSEnv(gym.Env):
         self.veh = VehicleDynamics()
         self.tank = Tank()
         self.batt = Battery()
+
+        self.lookahead = int(lookahead)
 
         self.reward_scale = float(reward_scale)
         self.lambda_soc = float(lambda_soc)
@@ -250,8 +261,14 @@ class EMSEnv(gym.Env):
         self.eq_factor = float(eq_factor)
 
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
+        # Base obs = 9 continuous + 7 gear one-hot. Lookahead appends `lookahead`
+        # normalized upcoming speeds and REPLACES the absolute progress scalar
+        # (a cycle fingerprint) with local future context -> net dim:
+        #   (9 - 1 progress) + 7 gears + lookahead = 15 + lookahead
+        obs_dim = (9 - 1) + N_GEARS_ONEHOT + self.lookahead if self.lookahead > 0 \
+            else 9 + N_GEARS_ONEHOT
         self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=(9 + N_GEARS_ONEHOT,), dtype=np.float32
+            low=-np.inf, high=np.inf, shape=(obs_dim,), dtype=np.float32
         )
 
         # episode state (set in reset)
@@ -308,6 +325,26 @@ class EMSEnv(gym.Env):
 
         gear_onehot = np.zeros(N_GEARS_ONEHOT, dtype=np.float32)
         gear_onehot[int(np.clip(d["gear"], 0, N_GEARS_ONEHOT - 1))] = 1.0
+
+        if self.lookahead > 0:
+            # Drop absolute `progress` (cycle fingerprint -> hurts generalization);
+            # replace with LOCAL future demand: next `lookahead` prescribed speeds,
+            # normalized like the other speed channels. Causal & cycle-agnostic.
+            fut = self.cycle.future_speeds(self.lookahead) / 35.0
+            cont = np.array(
+                [
+                    d["w_MGB"] / 300.0,
+                    d["dw_MGB"] / 60.0,
+                    d["T_MGB"] / 150.0,
+                    d["d_T_MGB"] / 80.0,
+                    2.0 * soc - 1.0,
+                    (soc - SOC_TARGET) * 10.0,
+                    d["v"] / 35.0,
+                    d["v_next"] / 35.0,
+                ],
+                dtype=np.float32,
+            )
+            return np.concatenate([cont, fut, gear_onehot])
 
         cont = np.array(
             [
