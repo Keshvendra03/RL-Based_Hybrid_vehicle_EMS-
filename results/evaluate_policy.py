@@ -116,11 +116,23 @@ def evaluate(checkpoint: str | None = None, cycle: str = "NEDC",
              seed: int = 0, obs_clean: bool = False) -> dict:
     """Evaluate ANY controller under identical conditions. Returns a metric dict."""
     if controller == "rl":
-        from stable_baselines3 import SAC
-        model = SAC.load(checkpoint)
+        from stable_baselines3 import SAC, TD3
+        # algo is recorded in the run's run_config.json when available
+        algo = "sac"
+        try:
+            cfg = json.loads((Path(checkpoint).parent / "run_config.json").read_text())
+            algo = cfg.get("algo", "sac")
+            if lookahead is None:
+                lookahead = cfg.get("lookahead")
+            obs_clean = bool(cfg.get("obs_clean", obs_clean))
+        except Exception:
+            pass
+        model = (TD3 if algo == "td3" else SAC).load(checkpoint)
         if lookahead is None:
             od = int(model.observation_space.shape[0])
-            lookahead = 0 if od <= 16 else od - 15
+            # obs_dim = 15 + lookahead  (or 13 + lookahead when obs_clean)
+            base = 13 if obs_clean else 15
+            lookahead = 0 if od <= base + 1 else od - base
         env = EMSEnv(cycle, eq_factor=eq_factor, k_fb=k_fb,
                      action_map=action_map, lookahead=lookahead,
                      obs_clean=obs_clean)
