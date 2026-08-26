@@ -89,6 +89,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 from src.agents.nstep_sac import NStepSAC, NStepReplayBuffer
 from src.agents.per import SACPER, PrioritizedReplayBuffer
 from src.env.ems_env import EMSEnv, SOC_TARGET, TERM_TOL
+from src.agents.instrumentation import SACDiagnostics, CheckpointRule
 
 # --------------------------------------------------------------------------- #
 # Tested & proven reference numbers (src/baselines/ecms.py, evaluate_advanced.py)
@@ -223,6 +224,7 @@ class EvalAndCheckpoint(BaseCallback):
         self.lookahead = lookahead
         self.k_fb = k_fb
         self.action_map = action_map
+        self.rule = CheckpointRule(soc_tol=TERM_TOL)
         self.best = np.inf
         self.history = []
         self.csv_path = out_dir / "eval_history.csv"
@@ -254,6 +256,12 @@ class EvalAndCheckpoint(BaseCallback):
                 self.model.save(self.out_dir / "sac_ems_best")
                 _write_best_score(self.out_dir, self.best)
                 tag = "  <-- new best (saved)"
+
+            for c, f in zip(self.cycles, finals):
+                self.rule.offer(step=self.num_timesteps, cycle=c, seed=None,
+                                v_ce_equiv=f["v_ce_equiv"],
+                                soc_final=f["soc_final"], violations=0)
+            self.rule.save(self.out_dir)
 
             self._append_csv([
                 {
@@ -484,9 +492,11 @@ def main():
         {**vars(args), "git_commit": _git_commit(), "obs_dim": int(env.observation_space.shape[0])},
         indent=2))
 
+    from stable_baselines3.common.callbacks import CallbackList
+    diag = SACDiagnostics(out_dir, batch_size=512, log_every=5000)
     model.learn(
         total_timesteps=args.timesteps,
-        callback=cb,
+        callback=CallbackList([cb, diag]),
         progress_bar=False,
         reset_num_timesteps=not args.resume,
         # log_interval is in EPISODES, not steps: SB3's TensorBoard writer only
