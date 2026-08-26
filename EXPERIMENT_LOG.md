@@ -188,6 +188,86 @@ deliberately left `linear`** so the pricing effect is isolated from E4.
 
 ---
 
+## E6 — EXP-B / EXP-B2 results (complete)
+
+**NEDC, seed 1, 150k steps, one variable each vs BASELINE-seed1:**
+
+| Metric | Baseline | EXP-B (mode-aware map) | EXP-B2 (reward unit fix) |
+|---|---|---|---|
+| **V_CE_equiv** | **4.1245** | 4.5573 (+10.5% worse) | 4.1782 (+1.3% worse) |
+| ΔSoC | +2.63pp | +3.31pp | +2.86pp |
+| OFF % | 29.4 | **16.7** | **25.7** |
+| ASSIST % | 20.6 | **39.7** | **26.9** |
+| critic MSE / RMSE | 2.597 / 1.611 | 18.244 / 4.271 | 2.655 / 1.629 |
+| action p50 / std | -0.081 / 0.644 | -0.046 / 0.396 | -0.081 / 0.487 |
+| violations | 0 | 0 | 0 |
+
+**FTP75:** EXP-B **improved** — 4.2072 -> **3.8960** (-7.4%), OFF 17.4->31.3,
+ASSIST 34.3->13.3, **charge-sustaining YES (+0.26pp)** — using 150k steps vs
+the baseline's 998k. The mapping is therefore **cycle-dependent**.
+
+**Interpretation.** P0-OLD **PARTIALLY CONFIRMED** (helps FTP75, hurts NEDC).
+P0-REVISED **NOT CONFIRMED as a performance fix**: offline the corrected
+reward picks OFF in 78.1% of states, yet the trained policy uses OFF in only
+25.7%. The reward became right; the policy did not follow it.
+
+**Key observation.** The policy collapses to `a ~ 0` under BOTH action maps
+(p50 -0.081 vs -0.046), i.e. the failure is invariant to action geometry.
+
+**Decision.** Investigate why the policy ignores a now-correct reward -> E7.
+
+---
+
+## E7 — EXP-D: gamma sweep ⇒ **SNR is scale-invariant; gamma is NOT the fix**
+
+**Hypothesis (P0-NEW).** Critic RMS TD residual (1.611) exceeds the total
+min-Q variation across the whole action range (0.18/0.44/1.08), so SNR < 1 and
+the actor follows noise. gamma=0.9999 inflates Q magnitude/variance and its
+in-code justification (terminal SoC term) was measured at 0.77% of episode
+reward. Lowering gamma should raise SNR.
+
+**Configuration.** NEDC, seed 1, 150k, unit-corrected reward
+(eq_factor 0.2717, k_fb 1.656), linear map, only gamma varied.
+
+| gamma | V_CE_equiv | ΔSoC | OFF% | ASSIST% | critic RMSE | alpha |
+|---|---|---|---|---|---|---|
+| 0.9999 (EXP-B2) | 4.1782 | +2.86pp | 25.7 | 26.9 | 1.629 | 0.0261 |
+| 0.999 | 4.3158 | **+1.67pp (CS YES)** | 22.4 | 30.5 | 1.338 | 0.0156 |
+| 0.99 | **4.1258** | +2.66pp | 27.4 | 27.8 | **0.605** | 0.0069 |
+
+**Q-landscape re-measured at gamma=0.99** (same probes):
+
+| probe | minQ span (g=0.9999 / g=0.99) | RMSE (1.611 / 0.605) | SNR (0.9999 -> 0.99) |
+|---|---|---|---|
+| low | 0.18 / 0.51 | | 0.11 -> 0.84 |
+| med | 0.44 / 0.07 | | 0.27 -> 0.12 |
+| high | 1.08 / 0.24 | | 0.67 -> 0.40 |
+
+**Result: REJECTED as a fix.** Lowering gamma shrank the Q *signal* and the
+critic *noise* together (Q ~ 1/(1-gamma)), leaving SNR essentially unchanged
+and still < 1. Worse, at gamma=0.99 the critic **disagrees** with the true
+reward at med and high torque, where at gamma=0.9999 it agreed at all three.
+
+**Positive by-product — E2 is vindicated.** With the corrected pricing the
+*true reward* now prefers OFF at high torque (`argmax trueR = a +1.000, mode
+OFF`, best-OFF - best-ASSIST = **+0.0169**), reversing the old preference for
+LPS. **The reward is now correct; the critic fails to represent it.**
+
+**Structural diagnosis.** |Q| ~ 2.5 while the entire action-dependent span is
+0.07-0.51 -> the advantage is 3-20% of the value, and critic fit error is ~24%
+of |Q|. Q-learning is being asked to resolve an advantage far below its own
+noise floor. This is a value/advantage scale problem, not a tuning problem.
+
+**Decision -> E8.** ECMS proves the optimal policy here is MYOPIC: minimize
+`fuel + lambda(SoC)*battery` instantly, with SoC handled by the lambda
+feedback rather than by a value function. The corrected reward IS that
+Hamiltonian (86.9% action agreement with ECMS). A near-myopic agent should
+therefore recover ECMS behaviour, while high gamma only adds integration
+variance without adding information. Testing gamma in {0.90, 0.50} with
+n_step=1 (n-step returns are meaningless at low gamma).
+
+---
+
 ## Pending
 
 | id | hypothesis | isolated variable |
