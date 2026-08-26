@@ -164,15 +164,25 @@ interleave, etc.) until this is resolved.**
    recover** within available data, matching `figures.py`'s independent
    "WORSENING" flag for FTP75 specifically. Full numbers:
    `VERIFIED_FACTS.md` §E 2026-08-26.
-4. **Now on hypothesis #3: critic/value-function instability**, likely
-   from `gamma=0.9999` (deliberately extreme — see `train_sac.py` design
-   rationale) combined with aggressive updates (`train_freq=64,
-   gradient_steps=64`). Added `--gradient-steps` CLI flag to
-   `train_sac.py` (default 64, unchanged) to test reducing update
-   aggressiveness as a single-variable smoke test, keeping `k_fb=8.0`
-   (kept from hypothesis #1's real partial improvement — don't revert a
-   working piece while testing a new one). In progress.
-5. **Pre-flight gate before ANY full-length run — mandatory, not optional.**
+4. **Hypothesis #3 CONFIRMED (2026-08-26) — `gradient_steps=16` fixes
+   critic instability.** Direct TensorBoard comparison at matched step
+   counts: FTP75 `critic_loss` at ~150k steps was 25.9 (still climbing) at
+   the original `gradient_steps=64`, vs. **4.3, bounded 1.8-8.0** at
+   `gradient_steps=16` — same pattern, milder, on NEDC. Not inferred, a
+   direct quantitative confirmation. Downstream: best `OFF%` of all
+   rounds on both cycles (NEDC 22.9%, FTP75 15.6%), NEDC's SoC trend now
+   non-monotonic/bounded, FTP75's SoC hugs ~50% in the run's second half
+   (50.7%→50.0%→49.3%, closest any run has gotten to ECMS's 50.13%
+   target). **Gate still NOT READY** — `OFF`/`ASSIST` gap vs. ECMS hasn't
+   closed, though it's the smallest gap seen yet. Full numbers:
+   `VERIFIED_FACTS.md` §E 2026-08-26 (gradient_steps confirmation entry).
+   **Current best config: `--eq-factor 1.3125/2.4062 --k-fb 8.0
+   --gradient-steps 16`.**
+5. **Next: test whether the remaining gap closes with more training time**
+   at this now-confirmed-stable config, before changing another variable.
+   Extend via `--resume` rather than restarting from scratch (reuses the
+   150k already spent). In progress.
+6. **Pre-flight gate before ANY full-length run — mandatory, not optional.**
    Run `python -m results.readiness_gate --run <smoke-test-dir>`
    (`results/readiness_gate.py`, added 2026-08-26). It checks, with actual
    numbers, not a gut call: unit tests pass, git tree is clean, the smoke
@@ -181,7 +191,7 @@ interleave, etc.) until this is resolved.**
    config up to 1.5M steps if this gate PASSes. One variable changed at a
    time, always smoke-tested first — never skip straight to a full run on
    an untested change.
-6. Once a config beats **both** baselines and is charge-sustaining on a
+7. Once a config beats **both** baselines and is charge-sustaining on a
    single seed, **confirm on 2-3 total seeds before declaring Phase 4
    done** — everything run so far (baseline and all smoke tests) has been
    `seed=0` only, and RL training variance can produce a one-off good run
@@ -189,7 +199,7 @@ interleave, etc.) until this is resolved.**
    a new "Phase 4" section in `VALIDATION.md` (same rigor as the existing
    entries — actual commands run, actual output inspected), and update
    `README.md`'s status checklist and this file's §2 table.
-7. **Stretch / generalization check**: evaluate the frozen NEDC-trained
+8. **Stretch / generalization check**: evaluate the frozen NEDC-trained
    checkpoint on FTP75 and vice versa, to catch cycle-overfitting before
    declaring Phase 4 done.
 

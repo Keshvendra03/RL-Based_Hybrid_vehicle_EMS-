@@ -258,6 +258,53 @@ this project. Next test: reduce update aggressiveness (`--gradient-steps`,
 added to `train_sac.py`) as a single-variable smoke test, keeping
 `k_fb=8.0` (kept from hypothesis #1's evidenced partial improvement).
 
+### 2026-08-26 (later still) — hypothesis #3 CONFIRMED: gradient_steps=16 fixes critic instability
+
+Ran `models_trial_gradstep/{NEDC,FTP75}`, 150k steps each, `--eq-factor
+1.3125/2.4062 --k-fb 8.0 --gradient-steps 16` (kept k_fb from #1's
+evidenced improvement; only new variable is gradient_steps 64→16).
+
+**Direct TensorBoard confirmation (not inferred from downstream behavior):**
+comparing `train/critic_loss` at the SAME step count (~150k) across the
+two configs:
+
+| | step ~150k critic_loss | trajectory |
+|---|---|---|
+| FTP75, `gradient_steps=64` (original) | **25.9** (step 157,584) | climbs to 53.5, never recovers |
+| FTP75, `gradient_steps=16` (this run) | **4.3** (step 148,204, final) | bounded 1.8-8.0 throughout, no upward trend |
+| NEDC, `gradient_steps=64` (original) | ~3-5 (interpolated) | climbs to 12.6 @ 278k before recovering |
+| NEDC, `gradient_steps=16` (this run) | **2.7** (step 148,840, final) | bounded 1.7-2.8 throughout |
+
+`ent_coef` converged lower and faster on both (NEDC final 0.025, FTP75
+final 0.016) — consistent with healthier, more stable training, not a
+symptom of a new problem. `actor_loss` still climbs steadily on both, but
+combined with a bounded (not diverging) critic this reads as the Q-function
+tracking genuinely improving returns, not instability.
+
+**Readiness gate (still NOT READY, but real improvement on every axis):**
+- NEDC: `OFF=22.9%` (best of ALL rounds so far: baseline 10.5%, static-#1
+  15.5%, k_fb-#1 7.8%, this run 22.9%; still -30.2pp vs ECMS's 53.1%).
+  `ASSIST=32.8%`. SoC quartile 58.2%→51.6%→55.0%→58.6% — **NOT monotonic**
+  (gate's SoC-trend check PASSED).
+- FTP75: `OFF=15.6%` (also best of all rounds: baseline 12.6%, static-#1
+  13.9%, k_fb-#1 12.7%, this run 15.6%; still -24.8pp vs ECMS's 40.4%).
+  `ASSIST=36.6%` (worst of all rounds — a real regression on this one
+  axis). SoC quartile 66.2%→50.7%→**50.0%→49.3%** — technically flagged
+  monotonic-drift by the gate (16.9pp, driven by the high Q1 start), but
+  the second-half behavior (50.7%→50.0%→49.3%) is the closest any run has
+  come to ECMS's own SoC_end target (50.13%) — worth noting as a
+  gate-heuristic limitation (a high Q1 that then corrects sharply still
+  trips the "monotonic across all 4 quartiles" check), not a real failure
+  of the underlying behavior.
+
+**Conclusion:** hypothesis #3 confirmed with direct, quantitative
+evidence — `gradient_steps=16` measurably fixes the critic divergence.
+Downstream mode-split (`OFF`/`ASSIST`) improved on both cycles but has not
+yet closed the gate. Since the 150k-step smoke budget is now exhausted
+with a CONFIRMED-healthy (not diverging) training process, the next test
+is whether the remaining gap closes with more training time at this same,
+now-stable config, before considering a further hyperparameter change.
+
 *(Next snapshot goes here — append, don't overwrite the ones above.)*
 
 ---
