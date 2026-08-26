@@ -299,6 +299,15 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default="models")
     p.add_argument("--eq-factor", type=float, default=1.0)
+    p.add_argument("--gamma", type=float, default=0.9999,
+                   help="discount factor. 0.9999 was justified in-code by the "
+                        "need to propagate the TERMINAL SoC signal; that term "
+                        "was measured at 0.77%% of episode reward, voiding the "
+                        "justification. High gamma inflates Q magnitude and "
+                        "variance: the critic's RMS TD residual (1.611) exceeds "
+                        "the total Q variation across the action range "
+                        "(0.18-1.08), so the actor cannot rank actions. "
+                        "See RL_DIAGNOSTIC_REPORT.md.")
     p.add_argument("--action-map", default="linear", choices=["linear", "modeaware"],
                    help="action->u reparameterization. 'linear' (default) is the "
                         "original mapping. 'modeaware' allocates fixed fractions "
@@ -407,7 +416,7 @@ def main():
     else:
         extra_buf_kwargs = {}
         if buf_cls is NStepReplayBuffer:
-            extra_buf_kwargs = dict(n_step=args.n_step, gamma=0.9999)
+            extra_buf_kwargs = dict(n_step=args.n_step, gamma=args.gamma)
         model = model_cls(
             "MlpPolicy",
             env,
@@ -416,7 +425,7 @@ def main():
             learning_starts=max(2 * ep_len, args.prefill_eps * ep_len),
             batch_size=512,
             tau=0.005,
-            gamma=0.9999,
+            gamma=args.gamma,
             train_freq=64,
             gradient_steps=args.gradient_steps,
             ent_coef="auto",
@@ -448,7 +457,7 @@ def main():
         cb.best = float(best_file.read_text())
 
     print(f"\n[train] {args.timesteps:,} steps  |  run={run_name}  "
-          f"eq_factor={args.eq_factor}  k_fb={args.k_fb}  action_map={args.action_map}  deadband={args.soc_deadband}")
+          f"eq_factor={args.eq_factor}  k_fb={args.k_fb}  action_map={args.action_map}  gamma={args.gamma}  deadband={args.soc_deadband}")
     for c in cycle_list:
         print(f"[train] {c}: rule-based benchmark {RULE_BASED_BENCHMARK.get(c,'?')}  "
               f"ECMS target {ECMS_TARGET.get(c,'?')}")
