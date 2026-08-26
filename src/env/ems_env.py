@@ -374,6 +374,10 @@ class EMSEnv(gym.Env):
         #   (9 - 1 progress) + 7 gears + lookahead = 15 + lookahead
         obs_dim = (9 - 1) + N_GEARS_ONEHOT + self.lookahead if self.lookahead > 0 \
             else 9 + N_GEARS_ONEHOT
+        if self.obs_clean:
+            # §21 ablation: drop v_next (byte-identical to fut_v1 when
+            # lookahead>0) and gear_oh6 (always 0.0 on both cycles).
+            obs_dim -= 2 if self.lookahead > 0 else 1
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=(obs_dim,), dtype=np.float32
         )
@@ -467,7 +471,10 @@ class EMSEnv(gym.Env):
             ],
             dtype=np.float32,
         )
-        return np.concatenate([cont, gear_onehot])
+        # At lookahead=0 there is no fut_v1, so v_next is NOT a duplicate and is
+        # kept; only gear_oh6 (always 0.0) is dropped under obs_clean.
+        go = gear_onehot[:-1] if self.obs_clean else gear_onehot
+        return np.concatenate([cont, go])
 
     # ------------------------------------------------------------------ #
     # Action -> physically feasible torque commands                       #

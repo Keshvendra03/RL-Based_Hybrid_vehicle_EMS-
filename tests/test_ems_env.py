@@ -178,3 +178,34 @@ if __name__ == "__main__":
     test_gym_api()
     test_k_fb_costate_feedback("NEDC")
     print("\nALL ENV VALIDATION TESTS PASSED")
+
+
+def test_observation_space_matches_actual_obs():
+    """Regression guard: observation_space.shape MUST equal the shape
+    _make_observation actually returns, for every option combination.
+    (A mismatch here crashed an obs_clean training run with
+     'could not broadcast input array from shape (18,) into shape (20,)'.)"""
+    for lookahead in (0, 5):
+        for obs_clean in (False, True):
+            env = EMSEnv("NEDC", lookahead=lookahead, obs_clean=obs_clean)
+            obs, _ = env.reset()
+            assert env.observation_space.shape == obs.shape, (
+                f"lookahead={lookahead} obs_clean={obs_clean}: space="
+                f"{env.observation_space.shape} obs={obs.shape}")
+            obs2, _, _, _, _ = env.step(np.zeros(1, dtype=np.float32))
+            assert obs2.shape == env.observation_space.shape
+    print("[7] observation_space == actual obs for all option combos  OK")
+
+
+def test_obs_clean_drops_only_dead_channels():
+    """obs_clean must remove exactly v_next (duplicate of fut_v1) and
+    gear_oh6 (always zero) -- nothing else."""
+    a = EMSEnv("NEDC", lookahead=5, obs_clean=False)
+    b = EMSEnv("NEDC", lookahead=5, obs_clean=True)
+    oa, _ = a.reset()
+    ob, _ = b.reset()
+    assert oa.shape[0] - ob.shape[0] == 2
+    assert np.isclose(oa[7], oa[8]), "v_next should duplicate fut_v1"
+    kept = np.concatenate([oa[:7], oa[8:19]])   # drop idx7 (v_next) and idx19
+    assert np.allclose(kept, ob), "obs_clean removed the wrong channels"
+    print("[8] obs_clean drops exactly the 2 dead channels  OK")
