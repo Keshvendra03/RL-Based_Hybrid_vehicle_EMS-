@@ -247,12 +247,27 @@ N_GEARS_ONEHOT: int = 7  # gears 0..6
 #   * the REACHABLE set of u -- hence of (T_CE, T_EM) -- is IDENTICAL.
 # Only the *density* of the action coordinate changes. No plant equation,
 # torque limit, feasibility mask, reward, or benchmark is touched.
-ACTION_MAPS = ("linear", "modeaware")
+# "modeaware_gated": identical to "modeaware" WHERE ENGINE-OFF IS PHYSICALLY
+# REACHABLE, and falls back to "linear" where it is not. Phase-4 measurement:
+# the ungated map spends 40% of the action range on OFF even above ~50 Nm where
+# the motor envelope makes OFF impossible, which compresses ASSIST and drove the
+# policy to LPS 100% at >75 Nm (+0.1464 L/100km). Gating keeps the Phase-4 gain
+# in 30-35 Nm (-0.1129 L/100km) without the high-torque distortion.
+ACTION_MAPS = ("linear", "modeaware", "modeaware_gated")
 ZA_MODEAWARE: float = 0.35   # share of action range for LPS   (u < 0)
 ZB_MODEAWARE: float = 0.60   # ZB-ZA = 25% for ASSIST; 1-ZB = 40% for OFF
 
 
-def map_action_to_u(a: float, t_mgb: float, action_map: str = "linear") -> float:
+def _off_reachable(t_mgb: float, w: float, dw: float) -> bool:
+    """True if the motor envelope can carry the whole demand (minus the engine
+    cutoff torque), i.e. engine-OFF is physically achievable at this point."""
+    cap = max(_interp1d_linear(_w_EM_max_row, _T_EM_max_arr, w)
+              - abs(_THETA_EM * dw) - _EPS_T, 0.0)
+    return cap >= t_mgb - _T_CUTOFF
+
+
+def map_action_to_u(a: float, t_mgb: float, action_map: str = "linear",
+                    w: float = 0.0, dw: float = 0.0) -> float:
     """Map agent action a in [-1,1] to the torque-split factor u.
 
     Both maps are monotonic bijections [-1,1] -> [U_MIN, U_MAX], so they
@@ -260,6 +275,10 @@ def map_action_to_u(a: float, t_mgb: float, action_map: str = "linear") -> float
     """
     z = (a + 1.0) * 0.5                      # [0,1]
     if action_map == "linear":
+        return U_MIN + z * (U_MAX - U_MIN)
+
+    if action_map == "modeaware_gated" and not _off_reachable(t_mgb, w, dw):
+        # OFF unreachable here -> don't waste action range on it
         return U_MIN + z * (U_MAX - U_MIN)
 
     # --- mode-aware ---------------------------------------------------
@@ -490,7 +509,7 @@ class EMSEnv(gym.Env):
         soc = self._Q_BT / _Q_BT_0
 
         a = float(np.clip(np.asarray(action).reshape(-1)[0], -1.0, 1.0))
-        u_raw = map_action_to_u(a, T, self.action_map)
+        u_raw = map_action_to_u(a, T, self.action_map, w, dw)
 
         # ---------------- standstill ------------------------------------
         if T == 0.0 or w <= 0.0:

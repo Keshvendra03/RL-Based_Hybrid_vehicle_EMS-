@@ -1,0 +1,121 @@
+PHASE-4 FORENSICS -- NEDC
+REF-SHORT gamma=0.20 V_CE_equiv=3.7775
+REF-INTER gamma=0.90 V_CE_equiv=3.8795
+
+====================================================================================================
+SECTION 7 -- 30-50 Nm SPLIT INTO 5 Nm SUB-BANDS (+ neighbours for context)
+====================================================================================================
+      band     n   feas%  SAC20 OFF  SAC90 OFF   RB OFF  ECMS OFF  SAC20 ASST   RB ASST   dFuel(SAC20-RB)
+     15-30   226   100.0       53.1       51.3     98.2      76.5        19.9       0.0           0.03828
+     30-35   117   100.0        0.0        0.0     84.6      48.7        48.7       0.0           0.06554
+     35-40    33   100.0        0.0        0.0      0.0      66.7        42.4       0.0          -0.00582
+     40-45     4   100.0        0.0        0.0    100.0       0.0        75.0       0.0           0.00000
+     45-50     4   100.0        0.0       25.0      0.0     100.0        25.0       0.0          -0.00031
+     50-75    80    96.2        0.0        0.0      0.0      22.5        53.8       0.0          -0.03211
+
+====================================================================================================
+SECTION 13 -- ERROR BUDGET BY OPERATING REGION  (timestep-aligned)
+====================================================================================================
+  demand alignment check: max |T_SAC - T_RB| over all steps = 0.00e+00  -> ALIGNED (controller-independent demand)
+
+          region  steps  time%   SAC fuel   RB fuel     dFuel   SAC elec   RB elec     dElec    dTOTAL
+   braking/regen    148   12.1     0.0220    0.0218   +0.0002    -0.5299   -0.6161   +0.0862   +0.0865
+      standstill    350   28.7     0.0093    0.0093   +0.0000     0.0000    0.0000   +0.0000   +0.0000
+         0-15 Nm    188   15.4     0.0356    0.0408   -0.0052     0.2037    0.2490   -0.0452   -0.0504
+        15-30 Nm    226   18.5     0.5829    0.2327   +0.3502     0.3965    0.7163   -0.3197   +0.0305
+        30-50 Nm    158   13.0     1.0395    0.4960   +0.5434    -0.0318    0.2555   -0.2873   +0.2561
+        50-75 Nm     80    6.6     0.9121    1.2058   -0.2937    -0.0353   -0.3275   +0.2922   -0.0015
+          >75 Nm     70    5.7     1.1640    1.4992   -0.3351     0.0088   -0.3115   +0.3203   -0.0148
+           TOTAL   1220  100.0                        +0.2598                        +0.0465   +0.3063
+
+  actual V_CE_equiv: SAC=3.7775  RB=3.5056  diff=+0.2720
+  SoC final: SAC=49.12%  RB=52.47%
+  NOTE: dElec is a PATH term; because V_CE_equiv saturates net battery use at 0,
+        the fuel column (dFuel) is what maps directly onto the headline gap.
+
+====================================================================================================
+SECTION 12 -- MATCHED-STATE ACTION COMPARISON (30-50 Nm)
+====================================================================================================
+    t   T_MGB   SoC%     v  SAC20 u  SAC90 u    RB u   ECMS u   SAC20   SAC90      RB    ECMS
+   52    42.4   50.0   1.0   -0.106    0.066   1.000   -0.850     LPS  ASSIST     OFF     LPS
+  176    38.1   44.5  10.1    0.680   -0.232  -0.570    0.931  ASSIST     LPS     LPS     OFF
+  369    37.8   41.0   9.1    0.069   -0.596  -0.570    0.931  ASSIST     LPS     LPS     OFF
+  548    30.5   40.4   0.5    0.028   -0.250   1.000   -0.850  ASSIST     LPS     OFF     LPS
+  676    30.0   39.9   1.5   -0.020   -0.566  -0.749   -0.850     LPS     LPS     LPS     LPS
+  861    34.8   38.8  10.0   -0.031   -0.469  -0.570    0.931     LPS     LPS     LPS     OFF
+  890    31.1   39.6  19.4    0.096    0.090   0.840    0.861  ASSIST  ASSIST     OFF     OFF
+  901    31.1   39.4  19.4    0.027    0.103   0.840   -0.850  ASSIST  ASSIST     OFF     LPS
+  912    31.1   39.3  19.4    0.009    0.121   0.840   -0.850  ASSIST  ASSIST     OFF     LPS
+  923    31.1   39.3  19.4    0.003    0.140   0.840    0.861  ASSIST  ASSIST     OFF     OFF
+ 1024    31.1   32.0  19.4   -0.329    0.161   0.840   -0.850     LPS  ASSIST     OFF     LPS
+ 1035    31.1   33.2  19.4   -0.364    0.039   0.840    0.861     LPS  ASSIST     OFF     OFF
+ 1046    31.1   34.6  19.4   -0.391    0.009   0.840   -0.850     LPS  ASSIST     OFF     LPS
+ 1057    31.1   36.0  19.4   -0.417    0.002  -1.619   -0.850     LPS  ASSIST     LPS     LPS
+
+====================================================================================================
+SECTIONS 8+9 -- COUNTERFACTUAL Q AND IMMEDIATE REWARD, 30-50 Nm  (gamma=0.20)
+====================================================================================================
+  states sampled: 40   OFF actually achievable: 40
+  dQ(OFF-ASSIST): mean=-0.0071  median=-0.0075  >0 in 30% of states
+  dr(OFF-ASSIST): mean=+0.0047  median=+0.0059  >0 in 55% of states
+  dQ(OFF-LPS)   : mean=-0.0158  median=-0.0214  >0 in 15% of states
+  dr(OFF-LPS)   : mean=-0.0000  median=+0.0002  >0 in 50% of states
+  sign(dQ) == sign(dr) for OFF-vs-ASSIST in 20% of states
+  SAC's own chosen mode here: OFF=0%, ASSIST=65%, LPS=35%, ONLY=0%
+
+  CASE CLASSIFICATION (brief section 17):
+    reward favours OFF but critic favours ASSIST -> CASE C (credit assignment/critic bias)
+
+====================================================================================================
+SECTIONS 8+9 -- COUNTERFACTUAL Q AND IMMEDIATE REWARD, 30-50 Nm  (gamma=0.90)
+====================================================================================================
+  states sampled: 40   OFF actually achievable: 40
+  dQ(OFF-ASSIST): mean=+0.0020  median=+0.0097  >0 in 60% of states
+  dr(OFF-ASSIST): mean=+0.0084  median=+0.0090  >0 in 55% of states
+  dQ(OFF-LPS)   : mean=+0.0013  median=+0.0072  >0 in 65% of states
+  dr(OFF-LPS)   : mean=+0.0102  median=+0.0117  >0 in 65% of states
+  sign(dQ) == sign(dr) for OFF-vs-ASSIST in 85% of states
+  SAC's own chosen mode here: OFF=2%, ASSIST=62%, LPS=35%, ONLY=0%
+
+  CASE CLASSIFICATION (brief section 17):
+    reward favours OFF and critic favours OFF -> CASE A (actor fails to select it)
+
+====================================================================================================
+SECTION 10 -- SHORT COUNTERFACTUAL ROLLOUTS (hold the counterfactual 1 step, then follow SAC)
+====================================================================================================
+  states: 12  (OFF feasible, 30-50 Nm)
+  horizon   cum r OFF  cum r ASSIST  OFF - ASSIST  OFF wins %
+       1s     -0.0733       -0.0798       +0.0064         58%
+       5s     -0.3802       -0.3972       +0.0170         58%
+      10s     -0.6968       -0.7083       +0.0115         58%
+      20s     -1.3420       -1.3449       +0.0030         42%
+
+====================================================================================================
+SECTION 11 -- COSTATE ANALYSIS
+====================================================================================================
+  eq_factor(SoC) = 0.2717 + 1.656*(0.5 - SoC)   [liter-units]
+  d(eq_factor)/dSoC = -1.656  (constant, proportional feedback)
+  SoC range visited: 28.64% .. 50.20%
+  => eq_factor range over the visited SoC: 0.2685 .. 0.6255  (span 0.3570)
+  in ECMS units (x4.8309): 1.2970 .. 3.0217  (ECMS lambda_0 = 1.3125)
+  relative variation of the price across the whole episode: 79.9%
+
+  INTERPRETATION: the costate already varies with SoC by the amount ECMS
+  prescribes. Because this inter-temporal coupling is supplied EXPLICITLY in
+  the per-step reward, a value function integrating many steps adds variance
+  without adding information -- which is why gamma=0.90 does not beat 0.20.
+
+====================================================================================================
+SECTIONS 15+16 -- STOCHASTICITY AND POLICY CONSISTENCY
+====================================================================================================
+  T_MGB    a_det    a_off  mean|sig|  P(OFF) stoch  det mode  a_std(samp)
+   20.0    0.235    0.730     0.4941            7%    ASSIST       0.4043
+   30.0   -0.559    0.820     0.5499            0%       LPS       0.3140
+   39.0   -0.634    0.861     0.7774            0%       LPS       0.4498
+   48.9    0.289    0.890     0.1208            0%    ASSIST       0.1225
+   76.0   -0.185    0.929     0.1678            0%       LPS       0.1297
+
+  deterministic  V_CE_equiv=3.7775  SoC=49.12%  OFF=35.3%  ASSIST=24.8%
+  stochastic     V_CE_equiv=3.8342  SoC=48.25%  OFF=35.9%  ASSIST=18.7%
+
+  [heatmap] mean r_OFF - r_ASSIST in 30-50 Nm = +0.00414

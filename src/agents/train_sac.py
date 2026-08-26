@@ -332,7 +332,7 @@ def main():
                         "the total Q variation across the action range "
                         "(0.18-1.08), so the actor cannot rank actions. "
                         "See RL_DIAGNOSTIC_REPORT.md.")
-    p.add_argument("--action-map", default="linear", choices=["linear", "modeaware"],
+    p.add_argument("--action-map", default="linear", choices=["linear", "modeaware", "modeaware_gated"],
                    help="action->u reparameterization. 'linear' (default) is the "
                         "original mapping. 'modeaware' allocates fixed fractions "
                         "of the action range to LPS/ASSIST/OFF by anchoring on the "
