@@ -113,7 +113,7 @@ def _drive(env: EMSEnv, policy_fn, collect_actions: bool):
 def evaluate(checkpoint: str | None = None, cycle: str = "NEDC",
              controller: str = "rl", eq_factor: float = 1.0, k_fb: float = 0.0,
              action_map: str = "linear", lookahead: int | None = None,
-             seed: int = 0) -> dict:
+             seed: int = 0, obs_clean: bool = False) -> dict:
     """Evaluate ANY controller under identical conditions. Returns a metric dict."""
     if controller == "rl":
         from stable_baselines3 import SAC
@@ -122,7 +122,8 @@ def evaluate(checkpoint: str | None = None, cycle: str = "NEDC",
             od = int(model.observation_space.shape[0])
             lookahead = 0 if od <= 16 else od - 15
         env = EMSEnv(cycle, eq_factor=eq_factor, k_fb=k_fb,
-                     action_map=action_map, lookahead=lookahead)
+                     action_map=action_map, lookahead=lookahead,
+                     obs_clean=obs_clean)
         fn = lambda obs, e: model.predict(obs, deterministic=True)[0]
         recs, rewards, actions, fin = _drive(env, fn, True)
         res = _summarize(recs, fin, rewards, actions)
@@ -219,10 +220,11 @@ def main():
     p.add_argument("--k-fb", type=float, default=0.0)
     p.add_argument("--action-map", default="linear")
     p.add_argument("--lookahead", type=int, default=None)
+    p.add_argument("--obs-clean", action="store_true")
     p.add_argument("--json", default=None, help="also write metrics to this JSON path")
     a = p.parse_args()
     r = evaluate(a.checkpoint, a.cycle, a.controller, a.eq_factor, a.k_fb,
-                 a.action_map, a.lookahead)
+                 a.action_map, a.lookahead, obs_clean=a.obs_clean)
     print(f"\n=== EVALUATION ===")
     print(fmt(r))
     if a.json:

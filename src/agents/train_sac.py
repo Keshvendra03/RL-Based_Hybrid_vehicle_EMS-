@@ -159,10 +159,12 @@ def prefill_buffer(model: SAC, env: EMSEnv, n_episodes: int, verbose: bool = Tru
 
 def rollout_deterministic(model: SAC, cycle: str, eq_factor: float = 1.0,
                            soc_deadband: float = 0.10, lookahead: int = 0,
-                           k_fb: float = 0.0, action_map: str = "linear") -> dict:
+                           k_fb: float = 0.0, action_map: str = "linear",
+                           obs_clean: bool = False) -> dict:
     """Roll the current policy out greedily; return final metrics."""
     env = EMSEnv(cycle, eq_factor=eq_factor, soc_deadband=soc_deadband,
-                 lookahead=lookahead, k_fb=k_fb, action_map=action_map)
+                 lookahead=lookahead, k_fb=k_fb, action_map=action_map,
+                 obs_clean=obs_clean)
     obs, _ = env.reset()
     while True:
         action, _ = model.predict(obs, deterministic=True)
@@ -212,7 +214,8 @@ class EvalAndCheckpoint(BaseCallback):
 
     def __init__(self, cycles, every_steps: int, out_dir: Path,
                  eq_factor: float, soc_deadband: float, lookahead: int = 0,
-                 k_fb: float = 0.0, action_map: str = "linear", verbose: int = 1):
+                 k_fb: float = 0.0, action_map: str = "linear",
+                 obs_clean: bool = False, verbose: int = 1):
         super().__init__(verbose)
         # cycles: single cycle name or list (multi-cycle). Model selection uses
         # the MEAN score across all eval cycles -> best CROSS-CYCLE policy.
@@ -224,6 +227,7 @@ class EvalAndCheckpoint(BaseCallback):
         self.lookahead = lookahead
         self.k_fb = k_fb
         self.action_map = action_map
+        self.obs_clean = obs_clean
         self.rule = CheckpointRule(soc_tol=TERM_TOL)
         self.best = np.inf
         self.history = []
@@ -244,7 +248,8 @@ class EvalAndCheckpoint(BaseCallback):
         if self.num_timesteps % self.every == 0:
             finals = [rollout_deterministic(self.model, c, self.eq_factor,
                                              self.soc_deadband, self.lookahead,
-                                             self.k_fb, self.action_map)
+                                             self.k_fb, self.action_map,
+                                             self.obs_clean)
                       for c in self.cycles]
             scores = [score(f) for f in finals]
             s = float(np.mean(scores))
@@ -476,6 +481,7 @@ def main():
         lookahead=args.lookahead,
         k_fb=args.k_fb,
         action_map=args.action_map,
+        obs_clean=args.obs_clean,
         verbose=1,
     )
     best_file = out_dir / "best_score.txt"
@@ -515,7 +521,8 @@ def main():
     model.save_replay_buffer(out_dir / "replay_buffer.pkl")
 
     finals = [rollout_deterministic(model, c, args.eq_factor, args.soc_deadband,
-                                     args.lookahead, args.k_fb, args.action_map)
+                                     args.lookahead, args.k_fb, args.action_map,
+                                     args.obs_clean)
               for c in cycle_list]
     s = float(np.mean([score(f) for f in finals]))
     if s < cb.best:
