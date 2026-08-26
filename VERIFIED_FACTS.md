@@ -148,6 +148,74 @@ already proven correct (`src/baselines/ecms.py`), not a new derivation.
 
 See `ROADMAP.md` §4 for the investigation plan and which to test first.
 
+### 2026-08-26 (later same day) — hypothesis #1 tested: static eq_factor REFUTED
+
+Ran `models_trial_eqfix/{NEDC,FTP75}`, 150k steps each, `--eq-factor 1.3125`
+(NEDC) / `2.4062` (FTP75) — the ECMS-proven charge-sustaining prices —
+replacing the flat default of 1.0. Gated with `results/readiness_gate.py`
+(added this session). **Both FAILED the gate:**
+
+- **NEDC**: `OFF=15.5%` (ECMS 53.1%, gap -37.6pp) `ASSIST=34.1%` (ECMS
+  0.2%, gap +33.9pp) — `ASSIST` got WORSE than the flat-1.0 baseline's
+  26.6%. SoC quartile trend: 53.2%→60.9%→64.3%→66.4%, monotonic drift
+  13.2pp (charging) — worse than the flat-1.0 baseline logged above.
+- **FTP75**: `OFF=13.9%` (ECMS 40.4%, gap -26.5pp) `ASSIST=34.2%` (ECMS
+  6.0%, gap +28.2pp) — also worse than baseline's 27.4%. SoC quartile
+  trend: 49.8%→45.9%→42.8%→40.7%, monotonic drift 9.1pp (depleting) — a
+  NEW failure direction not present in the flat-1.0 baseline.
+
+**Why this is refuted-with-an-asterisk, not a dead end:** `ecms.py`'s own
+docstring (`tune_lambda`) states outright that a CONSTANT lambda cannot
+make this plant charge-sustaining even for the Hamiltonian-optimal
+controller — closed-loop SoC feedback (`k_fb=8.0`) is required. A flat
+`eq_factor` was never a fair test of "does ECMS-correct pricing fix this";
+it tested the version ECMS's own authors already proved insufficient.
+
+**Action taken:** implemented `k_fb` (ECMS-style closed-loop costate
+feedback, `eq_factor_eff = eq_factor + k_fb*(SOC_TARGET - soc_before)`) in
+`EMSEnv` and threaded it through `train_sac.py` (commit `2a8cdbe`). Default
+`k_fb=0.0` is an exact no-op (verified by a new unit test,
+`test_k_fb_costate_feedback`, asserting the reward shift matches the
+formula algebraically to 1e-8 and that physics/mode are unchanged by
+`k_fb` — only the reward's battery-price term differs). 212/212 tests
+pass. Fresh smoke test launched: `models_trial_kfb/{NEDC,FTP75}`,
+`--eq-factor 1.3125/2.4062 --k-fb 8.0` — the actual, correctly-implemented
+test of hypothesis #1. Results pending.
+
+### 2026-08-26 (later still) — hypothesis #1 round 2 (k_fb=8.0): improves but does not resolve
+
+Ran `models_trial_kfb/{NEDC,FTP75}`, 150k steps each, `--eq-factor
+1.3125/2.4062 --k-fb 8.0` (the correctly-implemented closed-loop pricing).
+Gated with `results/readiness_gate.py`. **Both still FAIL the gate**, but
+not uniformly worse than round 1 — a genuine, measurable partial effect:
+
+- **NEDC**: `OFF=7.8%` (ECMS 53.1%, gap **-45.3pp**, WORSE than the flat-1.0
+  baseline's 10.5% and round 1's 15.5%). `ASSIST=27.5%` (back near the
+  flat-1.0 baseline's 26.6%, recovered from round 1's regression to
+  34.1%). SoC quartile: 49.9%→53.2%→56.3%→60.1%, still monotonically
+  drifting up (10.1pp) — improved starting point (49.9% vs round 1's
+  53.2%) but same runaway-charging character.
+- **FTP75**: `OFF=12.7%` (ECMS 40.4%, gap -27.7pp, essentially flat vs.
+  baseline's 12.6%). `ASSIST=25.8%` (recovered from round 1's 34.2% back
+  to near baseline's 27.4%). SoC quartile: 56.4%→62.4%→62.5%→**52.7%** —
+  **NOT monotonic** (gate's SoC-trend check PASSED here) — the closed-loop
+  feedback visibly pulled SoC back down in the last quartile instead of
+  the pure runaway seen in both prior FTP75 attempts (baseline: monotonic
+  up to 55.9%; round 1: monotonic down to 40.7%).
+
+**Conclusion:** the closed-loop feedback is doing something real and
+directionally correct (undoes round 1's ASSIST regression; introduces
+self-correcting SoC dynamics on FTP75 that neither the flat baseline nor
+the static-price round 1 showed) — but it does NOT close the actual
+gate-failing gap. `OFF` (pure-EV time, the core of the ASSIST BLOB) is
+still 28-45 percentage points below ECMS on both cycles. **Hypothesis #1
+(reward battery-pricing), even correctly implemented per ECMS's own proven
+formula, is not sufficient on its own to fix the ASSIST BLOB within a
+150k-step smoke test.** Per `ROADMAP.md`'s pre-agreed decision rule, moving
+to hypothesis #2 (SAC entropy) next — `k_fb=8.0` is kept as a real,
+evidenced improvement to carry forward into that investigation rather than
+reverted, since it is not neutral-or-harmful, just insufficient alone.
+
 *(Next snapshot goes here — append, don't overwrite the ones above.)*
 
 ---

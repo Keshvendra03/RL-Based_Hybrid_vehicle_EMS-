@@ -84,11 +84,9 @@ almost as much as or more than ECMS, but then spends that energy in small
 ASSIST increments instead of committing to sustained OFF/EV stretches.
 This is the single blocking failure mode right now.
 
-**Housekeeping distraction risk:** the entire Phase 3 audit (`CHANGELOG.md`
-[3.1.0]) is sitting **uncommitted** in the working tree. `train_sac.py`
-writes `git_commit` into `run_config.json` for provenance — with an dirty
-tree that guarantee is currently meaningless. Fix before launching any more
-experiments.
+**Housekeeping: resolved.** The Phase 3 audit is committed (`e263ed9`),
+and the `k_fb` reward-shaping addition is committed (`2a8cdbe`). Run
+outputs (`models/`, `logs/`) are gitignored, not tracked.
 
 ---
 
@@ -128,33 +126,42 @@ not a new derivation.
 **Do not skip ahead. Do not start a new experiment axis (PER, multi-cycle
 interleave, etc.) until this is resolved.**
 
-1. **Commit the Phase 3 audit** currently sitting uncommitted, so
-   `run_config.json` git-commit provenance is meaningful for every
-   experiment from here on. **Still outstanding as of 2026-08-26 — flagged
-   twice now, not yet done. Do this before any full-length run.**
-2. **Test hypothesis #1 (reward pricing)** — cheapest, most concretely
-   evidenced, zero code changes: 150k-step smoke test with `--eq-factor
-   1.3125` on NEDC / `--eq-factor 2.4062` on FTP75 instead of the flat
-   default of 1.0. Check the mode breakdown for `OFF%` rising toward
-   ECMS's and `ASSIST%` falling toward ECMS's (NOT `ONLY%` — see §3 above).
-   - **In progress (2026-08-26):** first attempt was killed mid-run by a
-     session teardown (unrelated to the training script — see
-     `VERIFIED_FACTS.md` §E) at ~46-48% of budget; that partial run's data
-     was inconclusive/mixed (`ASSIST%` got worse on both cycles, `OFF%`
-     barely moved) and is preserved at `models_trial_eqfix_partial_killed/`
-     for reference, not as a result. Relaunched fresh into
-     `models_trial_eqfix/` — awaiting completion.
-   - If this measurably narrows the OFF/ASSIST gap → the reward was
-     under-pricing battery energy. Next: consider the full dynamic
-     SoC-feedback price (`lambda_t = lambda_0 + k_fb*(0.5 - soc)`,
-     mirroring `ecms.py`'s proven `k_fb=8.0`) directly in `ems_env.py`
-     rather than a static per-cycle constant.
-   - If it does nothing → hypothesis #1 is refuted for practical purposes;
-     move to hypothesis #2.
-3. **If #1 doesn't resolve it, inspect TensorBoard** for `models/NEDC` and
-   `models/FTP75` (`tensorboard --logdir models`): entropy coefficient
-   trend, actor loss, action-value distribution. Confirm or reject
-   hypothesis #2 before touching SAC's entropy settings.
+1. ~~**Commit the Phase 3 audit**~~ — **DONE 2026-08-26**, commit `e263ed9`.
+   `.gitignore` updated to exclude run outputs (`models/`, `logs/`); each
+   run's own `run_config.json` remains the provenance record.
+2. **Test hypothesis #1 (reward pricing).**
+   - **Round 1 — static `eq_factor` (REFUTED, `VERIFIED_FACTS.md` §E
+     2026-08-26):** flat `eq_factor=1.3125`/`2.4062`, no feedback, made
+     `ASSIST%` and SoC drift WORSE on both cycles vs. the flat-1.0
+     baseline. Root cause: `ecms.py` already proves a constant lambda
+     can't charge-sustain this plant even for the optimal controller —
+     this was never a fair test of the hypothesis.
+   - **Round 2 — dynamic `k_fb` costate feedback (implemented, commit
+     `2a8cdbe`; smoke test IN PROGRESS as of 2026-08-26):** added `k_fb`
+     to `EMSEnv` (`eq_factor_eff = eq_factor + k_fb*(SOC_TARGET - soc)`,
+     mirroring `ecms.py`'s proven `k_fb=8.0` exactly). `k_fb=0` verified
+     as an exact no-op; 212/212 tests pass including an exact algebraic
+     check of the reward shift. Running: `models_trial_kfb/{NEDC,FTP75}`,
+     `--eq-factor 1.3125/2.4062 --k-fb 8.0`. **This is the correctly
+     implemented test of hypothesis #1 — round 1 was not.** Check `OFF%`
+     rising toward ECMS's and `ASSIST%` falling toward it (NOT `ONLY%` —
+     see §3).
+   - **Round 2 result (2026-08-26): gate FAILED on both cycles** —
+     `OFF` still 28-45pp below ECMS on both, the core ASSIST-BLOB gap.
+     Real partial effect, not neutral: `ASSIST%` recovered to baseline
+     levels on both cycles (undid round 1's regression), and FTP75's SoC
+     trend became non-monotonic/self-correcting instead of runaway. Not
+     sufficient alone. **Keeping `k_fb=8.0` going forward** (evidenced
+     improvement) while moving to hypothesis #2 — see `VERIFIED_FACTS.md`
+     §E for full numbers.
+3. **Now on hypothesis #2 (2026-08-26).** Inspect TensorBoard for
+   `models/NEDC` and `models/FTP75` (already 420k+/422k+ steps, no new
+   training needed for this step): entropy coefficient trend, actor loss,
+   action-value distribution. Confirm or reject before touching SAC's
+   entropy settings. If confirmed, next smoke test should combine
+   `k_fb=8.0` (kept from #1) with whatever entropy fix this points to —
+   test the combination, not entropy alone, since #1's partial effect is
+   real.
 4. **Pre-flight gate before ANY full-length run — mandatory, not optional.**
    Run `python -m results.readiness_gate --run <smoke-test-dir>`
    (`results/readiness_gate.py`, added 2026-08-26). It checks, with actual
