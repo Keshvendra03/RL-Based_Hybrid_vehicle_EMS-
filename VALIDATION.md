@@ -238,3 +238,28 @@ No parameters exist for speed scaling, traffic variation, accessory load or
 temperature; such tests would require inventing physics and must not be
 attempted. Cross-cycle evaluation (NEDC <-> FTP75) is available now at zero
 cost and is the correct first generalization test.
+
+
+---
+
+## Phase 6 - controlled conditional-exploration A/B (2026-08-27)
+
+**No validated component modified.** The intervention is a training-time-only
+override of `_sample_action`, proved evaluation-safe by inspection:
+`_sample_action` is called only from `collect_rollouts`, SAC does not override
+it, `predict()` never calls it, and every evaluation path in this project uses
+`predict(deterministic=True)`.
+
+**Feasibility preserved:** injection occurs only where the motor envelope can
+carry `T_MGB - T_CUTOFF`; measured 100% feasible across all injections
+(4,364 / 3,780 / 4,846 per seed). The env feasibility masks still run
+unchanged afterwards.
+
+**No imitation:** the injected action is a UNIFORM draw over the feasible OFF
+interval. No benchmark or ECMS action is used as label, target or
+demonstration at any point.
+
+**Result: hypothesis REFUTED.** Coverage in the target cell rose 4.5% -> 36.7%
+with no critic correction there, no actor response, and worse fuel on both
+cycles (NEDC 3.7666 -> 3.8178; FTP75 3.2889 -> 3.2984). NEDC charge
+sustainability degraded 3/3 -> 2/3. Full detail: `PHASE6_FINAL_REPORT.md`.

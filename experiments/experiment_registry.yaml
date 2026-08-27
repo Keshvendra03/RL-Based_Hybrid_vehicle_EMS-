@@ -507,6 +507,62 @@ experiments:
       15-35 Nm at SoC 40-55%, head-to-head vs normal SAC, all else identical.
       NOT imitation. NOT STARTED -- awaiting authorisation.
 
+  - id: PHASE6-conditional-exploration-AB
+    date: 2026-08-27
+    git_commit: 6e2d475
+    status: complete
+    verdict: REFUTED
+    hypothesis: >
+      Conditional replay-coverage hole at 30-35 Nm / SoC 40-50 causes the
+      critic to misestimate Q(OFF), so the actor avoids OFF and fuel suffers.
+    design: strict_AB_same_seeds
+    control:
+      note: "Phase-5 validated candidate, already trained at commit 9a125ad"
+      dirs: [models_p5s0_k2.5, models_p5_k2.5, models_p5_k2.5_s2]
+    treatment:
+      dirs: [models_p6_trt_N0, models_p6_trt_N1, models_p6_trt_N2]
+      intervention: targeted_conditional_exploration
+      te_prob: 0.30
+      activation: "15<=T_MGB<35 Nm AND 0.40<=SoC<=0.55 AND OFF physically reachable"
+      injections_per_seed: [4364, 3780, 4846]
+      feasible_pct: 100.0
+      evaluation_safe: "overrides _sample_action only; predict() unaffected"
+      imitation: false
+    frozen: [gamma, n_step, k_fb, eq_factor, action_map, reward, network,
+             optimizer, lr, batch, buffer, lookahead, entropy, physics, benchmark, ecms]
+    seeds: [0, 1, 2]
+    training_steps: 150000
+    results:
+      coverage_30_35_soc40_50: {control_pct: 4.5, control_n: 274,
+                                treatment_pct: 36.7, treatment_n: 1333}
+      coverage_15_30_soc40_50: {control_pct: 44.1, treatment_pct: 54.9}
+      dQ_off_assist_30_35: {control: -0.0071, treatment: -0.0066}
+      dr_off_assist_30_35: {control: 0.0000, pos_pct: 10}
+      dQ_off_assist_15_30_pos_pct: {control: 14, treatment: 34}
+      conflict_r_off_q_assist_15_30: {control: 86, treatment: 66}
+      p_off_15_30: {control: 68.9, treatment: 50.7}
+      actor_q_displacement_15_30: {control: 0.066, treatment: 0.270}
+      NEDC: {control_mean: 3.7666, control_std: 0.0785, treatment_mean: 3.8178,
+             treatment_std: 0.0644, delta: 0.0513, cohen_d: -0.71,
+             cs_control: "3/3", cs_treatment: "2/3", violations: 0}
+      FTP75: {control_mean: 3.2889, control_std: 0.0174, treatment_mean: 3.2984,
+              treatment_std: 0.0184, delta: 0.0095, cohen_d: -0.53,
+              cs_control: "3/3", cs_treatment: "3/3", violations: 0}
+      error_budget_total: {control: 0.1807, treatment: 0.3229}
+    case_classification: "CASE 3 - coverage up, Q did not improve"
+    rejected_links: ["coverage->Q at 30-35 Nm", "Q->actor at 15-30 Nm",
+                     "intervention->fuel on both cycles"]
+    phase5b_correction: >
+      At 30-35 Nm dr(OFF-ASSIST)=+0.0000 (positive in only 10% of states) and
+      85-87% of states are [r=ASSIST, Q=ASSIST]. Reward and critic AGREE there;
+      the Phase-5B "reward favours OFF, critic disagrees" claim was generalised
+      from the 15-30 Nm aggregate and does not hold for that band.
+    new_bottleneck: "actor-side displacement at 15-30 Nm"
+    next_recommended: >
+      Entropy temperature at 15-30 Nm on the gated + k_fb=2.5 config.
+      NOT STARTED -- awaiting authorisation. Caveat: Phase 5 found
+      target_entropy -1/-2/-3 indistinguishable at n=3 on the LINEAR config.
+
 planned:
   - id: EXP-C
     hypothesis: "target_entropy -1 forces stochasticity that opposes commitment"

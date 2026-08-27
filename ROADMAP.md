@@ -1,5 +1,15 @@
 # Project Roadmap — RL-Based Hybrid Vehicle EMS
 
+> **PHASE 6 (2026-08-27) - conditional-coverage hypothesis REFUTED.** A
+> controlled A/B raised OFF coverage at 30-35 Nm / SoC 40-50 from **4.5% to
+> 36.7%** (4.9x) and the critic did **not** respond (dQ(OFF-ASSIST)
+> -0.0071 -> -0.0066). Fuel worsened on both cycles (NEDC 3.7666 -> 3.8178;
+> FTP75 3.2889 -> 3.2984) and NEDC charge sustainability fell 3/3 -> 2/3.
+> **Phase-5B diagnosis corrected**: at 30-35 Nm reward and critic AGREE on
+> ASSIST (85-87% of states), so there was no conflict to fix.
+> **New bottleneck: actor displacement at 15-30 Nm.**
+> See `PHASE6_FINAL_REPORT.md`.
+
 > **PHASE 5B (2026-08-27) - forensic closure, no training.** Direct replay
 > measurement **refutes** the Phase-5 starvation inference (OFF coverage is
 > 15.6% at 30-35 Nm), but reveals a **conditional** hole: only **4.5%** of

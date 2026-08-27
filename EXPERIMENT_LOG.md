@@ -556,6 +556,63 @@ imitation - no benchmark/ECMS action used as a label.
 
 ---
 
+## E14 - PHASE 6: controlled conditional-exploration A/B -> REFUTED
+
+Full write-up: `PHASE6_FINAL_REPORT.md`. Raw:
+`results/phase6/phase6_forensics_NEDC.txt`; figure
+`results/phase6/figures/q_landscape_ab_NEDC.png`.
+
+**Design.** CONTROL = Phase-5 validated candidate (already trained, commit
+9a125ad, replay retained -> provably untouched). TREATMENT = identical except
+one flag. Seeds {0,1,2}, 150k steps, gamma 0.20, n_step 1, gated map,
+k_fb 2.5. Intervention: override `_sample_action`; when 15<=T<35 Nm,
+0.40<=SoC<=0.55 AND OFF physically reachable, replace the action with a
+UNIFORM draw from the feasible OFF interval, p=0.30. Evaluation-safe by
+construction; 100% feasible; ~4,400 injections/seed.
+
+**Manipulation check PASSED.** 30-35 Nm / SoC 40-50 OFF coverage
+**4.5% -> 36.7%** (274 -> 1,333 transitions, 4.9x). 15-30 Nm 44.1% -> 54.9%.
+
+**But the chain broke at the first link.** At 30-35 Nm an 8x coverage increase
+moved dQ(OFF-ASSIST) from -0.0071 to -0.0066 -- nothing.
+
+**CORRECTION TO PHASE 5B.** At 30-35 Nm `dr(OFF-ASSIST) = +0.0000`, positive
+in only 10% of states; 85-87% of states are `[r=ASSIST, Q=ASSIST]` -- reward
+and critic AGREE. The Phase-5B claim that the reward favours OFF there was
+generalised from the 15-30 Nm aggregate and is wrong for that band. There was
+no conflict to repair.
+
+**Where a real conflict exists (15-30 Nm, dr>0 in 100% of states):** coverage
+DID partially correct the critic (conflict 86% -> 66%, dQ>0 14% -> 34%), but
+the actor moved the WRONG way (P(OFF) 68.9% -> 50.7%, displacement
+0.066 -> 0.270).
+
+**Vehicle level (3 seeds, no cherry-picking):**
+| cycle | CONTROL | TREATMENT | delta | Cohen d | CS |
+|---|---|---|---|---|---|
+| NEDC | 3.7666 +/- 0.0785 | 3.8178 +/- 0.0644 | +0.0513 WORSE | -0.71 | 3/3 -> 2/3 |
+| FTP75 | 3.2889 +/- 0.0174 | 3.2984 +/- 0.0184 | +0.0095 WORSE | -0.53 | 3/3 -> 3/3 |
+
+**Error budget:** total +0.1807 -> +0.3229. 15-30 Nm worsened
+(+0.3677 -> +0.4636) and ~55% of the >75 Nm advantage was lost
+(-0.3142 -> -0.1436). Error redistributed and increased.
+
+**CLASSIFICATION: CASE 3 (coverage up, Q unchanged) -> REFUTED.**
+Rejected links: coverage->Q at 30-35 Nm; Q->actor at 15-30 Nm;
+intervention->fuel on both cycles.
+
+**NEW PRIMARY BOTTLENECK: actor-side displacement at 15-30 Nm** (largest error
+term +0.3677, reward favours OFF in 100% of states, critic partially
+correctable, actor retreats anyway).
+
+**Next (NOT started, awaiting authorisation): entropy temperature at
+15-30 Nm.** Caveat recorded: Phase 5 found target_entropy -1/-2/-3
+indistinguishable at n=3 on the LINEAR config; this is justified only because
+the config and diagnosis are now different. If it fails, the unimodal Gaussian
+policy class is the limitation.
+
+---
+
 ## Pending
 
 | id | hypothesis | isolated variable |

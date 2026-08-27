@@ -15,6 +15,37 @@ are validated and out of scope (see **Locked Components**).
   inference is REFUTED by direct measurement, and the bimodal-Q conclusion is
   demoted from primary cause to symptom.** See `PHASE5B_FORENSIC_CLOSURE.md`.
 
+- **Phase 6** (2026-08-27): controlled A/B conditional-exploration experiment.
+  **The Phase-5B conditional-coverage hypothesis is REFUTED.** Coverage at
+  30-35 Nm / SoC 40-50 was raised 4.5% -> 36.7% (274 -> 1,333 transitions) and
+  Q(OFF-ASSIST) did not move (-0.0071 -> -0.0066). Fuel worsened on both
+  cycles. See `PHASE6_FINAL_REPORT.md`.
+
+### CORRECTION TO THE PHASE-5B DIAGNOSIS (issued in Phase 6)
+
+Phase 5B stated "the reward favours OFF and the critic disagrees" at 30-35 Nm.
+**This was overstated.** Measured at 30-35 Nm: `dr(OFF-ASSIST) = +0.0000`,
+positive in only **10%** of states, and **85-87% of states are
+`[reward=ASSIST, Q=ASSIST]` -- reward and critic AGREE**. The Phase-5B claim
+generalised the 15-30 Nm aggregate (+0.0011) into a region where it does not
+hold. There was no conflict at 30-35 Nm to repair.
+
+### CURRENT PRIMARY BOTTLENECK (Phase 6, measured)
+
+**Actor-side displacement at 15-30 Nm.**
+
+  * 15-30 Nm is the largest remaining error term (+0.3677 L/100km), unchanged
+    by every intervention in Phases 4-6.
+  * There the reward unambiguously favours OFF (`dr>0` in **100%** of states).
+  * The critic is partially correctable there: raising coverage cut the
+    `[r=OFF, Q=ASSIST]` conflict from **86% -> 66%**.
+  * But the actor moved the WRONG way while the critic improved: P(OFF)
+    **68.9% -> 50.7%**, actor-Q displacement **0.066 -> 0.270**.
+  * Alignment predicts performance: FTP75 (the only benchmark-level result) is
+    the most aligned config measured (75.8% aligned / 11.7% displaced).
+
+### SUPERSEDED (kept for the record)
+
 ### CURRENT PRIMARY BOTTLENECK (Phase 5B, measured)
 
 **Critic misestimation of Q(OFF) at the operating SoC, caused by a
