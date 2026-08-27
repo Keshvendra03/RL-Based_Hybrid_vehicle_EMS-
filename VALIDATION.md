@@ -201,3 +201,40 @@ mis-scaled. Conversion for RL work:
 
 The evaluation metric `v_ce_equiv` is produced by the validated EFC block and
 is unaffected by this reward-side scaling.
+
+
+---
+
+## Phase 5B - forensic closure findings touching validated/benchmark components (2026-08-27)
+
+**Nothing validated was modified.** Recorded here because these findings
+concern the benchmark comparison and the environment parameterisation.
+
+### FTP75 matched-state comparison (SAC vs rule-based vs ECMS)
+
+| controller | V_CE_equiv | SoC final | dSoC | engine-ON | OFF% |
+|---|---|---|---|---|---|
+| SAC (gated, k_fb=1.656) | 3.2356 | 50.62% | +0.62pp | 444 s | 44.3 |
+| advanced rule-based | 3.2323 | 53.86% | +3.86pp | 414 s | 46.3 |
+| ECMS | 2.8097 | 50.13% | +0.13pp | 501 s | 40.4 |
+
+SAC is within **+0.10%** of the rule-based benchmark on this seed and is
+**better charge-balanced** than it (+0.62 vs +3.86pp).
+
+**ECMS advantage is engine operating-point quality, not mode selection:** ECMS
+uses MORE engine-on time (501 s vs 444 s) yet burns less fuel. The SAC-ECMS
+gap is broadly distributed (30-50 Nm +0.143, 50-75 Nm +0.115, 15-30 Nm +0.095
+L/100km), not concentrated in one region.
+
+### ENVIRONMENT LIMITATION recorded (generalization testing)
+
+Initial SoC is **not a parameter**: `_Q_BT_IC` is hard-coded at 50% in
+`src/env/powertrain.py`, and both `Battery.reset()` and `EMSEnv.reset()` use it
+directly. Varying initial SoC - the most scientifically meaningful
+shifted-condition test available - therefore requires a small, explicitly
+scoped code change. It has NOT been made.
+
+No parameters exist for speed scaling, traffic variation, accessory load or
+temperature; such tests would require inventing physics and must not be
+attempted. Cross-cycle evaluation (NEDC <-> FTP75) is available now at zero
+cost and is the correct first generalization test.

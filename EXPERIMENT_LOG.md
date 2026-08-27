@@ -502,6 +502,60 @@ class itself is the limitation.
 
 ---
 
+## E13 - PHASE 5B: forensic closure audit (NO TRAINING)
+
+Full write-up: `PHASE5B_FORENSIC_CLOSURE.md`. Raw:
+`results/phase5b/phase5b_forensics.txt`; figures `q_landscape_{NEDC,FTP75}.png`.
+
+**PHASE-5 CLAIM REFUTED.** Phase 5 section O inferred that sigma-collapse
+starved the buffer of OFF transitions. Direct measurement of the actual replay
+buffer (150,016 transitions) shows OFF coverage of **15.6% at 30-35 Nm and
+44.9% at 15-30 Nm** - substantial, not absent.
+
+**But conditioning on SoC finds the real hole (CASE R3):** the policy operates
+at SoC 40-50%, and there 30-35 Nm OFF coverage is only **4.5% (~276 of
+6,132)**. The OFF data that exists sits at SoC<40, visited during the early
+runaway phase.
+
+**What k_fb=2.5 actually did (matched states, before/after):**
+  * re-ranked OFF ABOVE LPS in the critic (dQ(OFF-LPS) -0.0217 -> +0.0054)
+    -> this is why SoC stopped running away
+  * but pushed the actor mean toward LPS in every band
+    (15-30: -0.247 -> -0.398; 30-35: -0.549 -> -0.802; 35-50: -0.054 -> -0.424)
+  * and worsened dQ(OFF-ASSIST) to -0.0062 / -0.0222
+  * while dr(OFF-ASSIST) stayed POSITIVE (+0.0011): the reward still prefers
+    OFF, the critic no longer does.
+
+**Actor-vs-critic distribution (n=120 states/config):**
+
+| config | mean displacement | A aligned | B displaced | D flat |
+|---|---|---|---|---|
+| NEDC k=1.656 | 0.149 | 60.8% | 21.7% | 0.0% |
+| NEDC k=2.5 | **0.295** | 51.7% | **37.5%** | 0.0% |
+| FTP75 k=1.656 (best) | 0.154 | **75.8%** | 11.7% | 0.0% |
+
+D_flat = 0% everywhere -> critic resolution is NOT the limit. Alignment tracks
+performance: the benchmark-level FTP75 config is the most aligned.
+
+**Costate:** median price 2.79 ECMS units vs proven lambda_0 = 1.3125; 95.3%
+of the episode priced above lambda_0 -> battery systematically over-priced.
+
+**Error budget:** the entire net gain of k=2.5 comes from restoring the >75 Nm
+advantage (+0.1222 -> -0.3142); 30-50 Nm actually WORSENED vs k=1.656
+(+0.1318 -> +0.3705) and 15-30 Nm (+0.3677) is unchanged in every config.
+
+**BOTTLENECK: critic misestimation of Q(OFF) at the operating SoC from a
+conditional coverage hole**, with actor displacement as a secondary
+k_fb-induced effect. The Phase-5 bimodal-Q story is demoted to a SYMPTOM (the
+OFF lobe is fitted from ~276 relevant samples).
+
+**Recommended next intervention (NOT started, awaiting authorisation):** a
+controlled exploration schedule guaranteeing feasible-OFF coverage in 15-35 Nm
+at SoC 40-55%, head-to-head against normal SAC, all else identical. Not
+imitation - no benchmark/ECMS action used as a label.
+
+---
+
 ## Pending
 
 | id | hypothesis | isolated variable |

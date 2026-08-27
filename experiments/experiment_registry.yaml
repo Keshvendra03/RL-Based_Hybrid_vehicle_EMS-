@@ -463,6 +463,50 @@ experiments:
       cannot cross it.
     next: "E13 -- raise target_entropy to {-0.5, 0.0}, one variable"
 
+  - id: PHASE5B-forensic-closure
+    date: 2026-08-27
+    status: complete
+    type: analysis_only_no_training
+    changed_variable: none
+    frozen: [gamma, k_fb, reward, action_map, network, lr, entropy, replay,
+             batch, environment, vehicle_model, benchmark, ecms]
+    analyses: [replay_coverage, matched_before_after_kfb, q_landscape_figures,
+               actor_critic_distribution, costate_percentiles, error_budget_3way,
+               pareto_table, ftp75_ecms_matched_state, generalization_inventory]
+    key_findings:
+      replay_coverage:
+        total_transitions: 150016
+        off_pct_15_30: 44.9
+        off_pct_30_35: 15.6
+        off_pct_30_35_at_soc_40_50: 4.5
+        off_count_30_35_at_soc_40_50: 276
+        case: R3
+        note: "Phase-5 starvation inference REFUTED; the hole is CONDITIONAL on SoC"
+      before_after_kfb:
+        dQ_off_assist_30_35: {k1656: -0.0016, k25: -0.0222}
+        dQ_off_lps_30_35: {k1656: -0.0217, k25: 0.0054}
+        dr_off_assist_30_35: {k1656: 0.0001, k25: 0.0001}
+        actor_mean_30_35: {k1656: -0.549, k25: -0.802}
+        interpretation: "k_fb fixed OFF-vs-LPS (stopped the SoC runaway) but broke OFF-vs-ASSIST and displaced the actor"
+      actor_critic:
+        NEDC_k1656: {displacement: 0.149, A: 60.8, B: 21.7, D_flat: 0.0}
+        NEDC_k25: {displacement: 0.295, A: 51.7, B: 37.5, D_flat: 0.0}
+        FTP75_k1656: {displacement: 0.154, A: 75.8, B: 11.7, D_flat: 0.0}
+      costate_median_ecms_units: {k1656: 2.538, k25: 2.791, ecms_lambda0: 1.3125}
+      ftp75_vs_ecms:
+        sac: 3.2356
+        rule_based: 3.2323
+        ecms: 2.8097
+        note: "ECMS uses MORE engine-on time (501s vs 444s) yet less fuel -> operating-point quality, not mode selection"
+    bottleneck: >
+      Critic misestimation of Q(OFF) at the operating SoC, caused by a
+      conditional replay-coverage hole. Actor displacement is a secondary,
+      k_fb-induced effect. Phase-5 bimodal-Q demoted to symptom.
+    next_recommended: >
+      Controlled exploration schedule guaranteeing feasible-OFF coverage in
+      15-35 Nm at SoC 40-55%, head-to-head vs normal SAC, all else identical.
+      NOT imitation. NOT STARTED -- awaiting authorisation.
+
 planned:
   - id: EXP-C
     hypothesis: "target_entropy -1 forces stochasticity that opposes commitment"

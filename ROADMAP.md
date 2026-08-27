@@ -1,5 +1,14 @@
 # Project Roadmap — RL-Based Hybrid Vehicle EMS
 
+> **PHASE 5B (2026-08-27) - forensic closure, no training.** Direct replay
+> measurement **refutes** the Phase-5 starvation inference (OFF coverage is
+> 15.6% at 30-35 Nm), but reveals a **conditional** hole: only **4.5%** of
+> transitions at the operating SoC (40-50%) contain OFF. The reward favours OFF
+> (`dr=+0.0011`) while the critic does not (`dQ=-0.0062..-0.0222`).
+> **Bottleneck = critic misestimation from conditional replay coverage**; the
+> bimodal-Q story is demoted to a symptom. Next (unauthorised): a controlled
+> OFF-coverage exploration schedule. See `PHASE5B_FORENSIC_CLOSURE.md`.
+
 > **PHASE 5 (2026-08-26).** Costate gain `k_fb` identified. NEDC charge
 > sustainability **solved** (1/3 -> 3/3 seeds at k_fb=2.5) with zero violations,
 > but NEDC fuel is **statistically tied** with the linear reference

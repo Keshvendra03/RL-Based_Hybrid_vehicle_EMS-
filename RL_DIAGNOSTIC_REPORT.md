@@ -3,9 +3,33 @@
 Forensic audit of the reinforcement-learning layer. Physics/plant/benchmarks
 are validated and out of scope (see **Locked Components**).
 
-- **Phase 1** (2026-08-26): forensic audit → P0 = action geometry.
-- **Phase 2** (2026-08-26): instrumentation + Q-landscape → **P0 REJECTED,
+- **Phase 1** (2026-08-26): forensic audit -> P0 = action geometry.
+- **Phase 2** (2026-08-26): instrumentation + Q-landscape -> **P0 REJECTED,
   replaced by a reward unit-mismatch (P0-REVISED).**
+- **Phase 4** (2026-08-26): exploration deadlock (OFF 3.9-6.7 sigma from the
+  actor mean) -> gated action map. FTP75 reaches benchmark; NEDC SoC runaway.
+- **Phase 5** (2026-08-26): costate gain k_fb identified. NEDC charge
+  sustainability solved (1/3 -> 3/3); fuel tied. Proposed a bimodal-Q /
+  unimodal-policy explanation.
+- **Phase 5B** (2026-08-27): **forensic closure. The Phase-5 replay-starvation
+  inference is REFUTED by direct measurement, and the bimodal-Q conclusion is
+  demoted from primary cause to symptom.** See `PHASE5B_FORENSIC_CLOSURE.md`.
+
+### CURRENT PRIMARY BOTTLENECK (Phase 5B, measured)
+
+**Critic misestimation of Q(OFF) at the operating SoC, caused by a
+CONDITIONAL replay-coverage hole.**
+
+  * true reward favours OFF: `dr(OFF-ASSIST) = +0.0011`
+  * critic disagrees:        `dQ(OFF-ASSIST) = -0.0062 .. -0.0222`
+  * cause: at 30-35 Nm / SoC 40-50 (the operating point) only **4.5%
+    (~276 of 6,132)** replay transitions contain OFF; the OFF data that exists
+    sits at SoC<40, visited during the early runaway phase.
+  * critic is NOT flat (`D_flat = 0.0%`) -> capacity is not the limit.
+  * actor displaced from its own critic in **37.5%** of states; k_fb=2.5
+    DOUBLED mean displacement (0.149 -> 0.295).
+  * costate median = **2.79 ECMS units vs proven lambda_0 = 1.3125** ->
+    battery systematically over-priced, independently depressing Q(OFF).
 
 Companion files: `EXPERIMENT_LOG.md` (per-experiment record),
 `experiments/experiment_registry.yaml` (machine-readable),
