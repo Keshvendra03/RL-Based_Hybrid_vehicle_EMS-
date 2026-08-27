@@ -245,3 +245,110 @@ a scope increase to be proposed, not taken unilaterally.
 3. FTP75 sits at the benchmark with `k_fb=1.656` but `k_fb=2.5` costs it
    +0.043 — is the cycle-specific costate a real requirement or an artifact of
    the 150k budget?
+
+---
+
+## 10. GAP-CLOSURE ADDENDUM (2026-08-27)
+
+**Why this section exists.** A self-audit against the original Phase-6 brief found
+that §G/§H/§I/§J/§L/§N had only been executed for NEDC — the FTP75 replay-coverage,
+matched-Q, reward-vs-Q, actor, and SAC-vs-ECMS forensics were never run, and the
+actor A/B/C/D categorical classification (required by §J) had not been computed for
+either cycle (only the scalar "displacement" summary existed). No new training was
+run to close these gaps — `results/phase6_ab_full.py` re-uses the same CONTROL
+(`models_p5s0_k2.5`, `models_p5f_k2.5_s0` + seeds) and TREATMENT
+(`models_p6_trt_N*`, `models_p6_trt_F*`) checkpoints and replay buffers already
+produced for the main Phase-6 run. Raw output:
+`results/phase6/phase6_forensics_{NEDC,FTP75}_FULL.txt` and the companion
+`*_{NEDC,FTP75}.json` files.
+
+### 10.1 §J — full actor-alignment classification, all 3 regions × both cycles
+
+| cycle | region | A_aligned (C→T) | B_displaced (C→T) | C_Q≠OFF (C→T) | mean displacement (C→T) |
+|---|---|---|---|---|---|
+| NEDC | 15-30 | 86.2%→27.6% | 3.4%→72.4% | 10.3%→0.0% | 0.066→0.270 |
+| NEDC | 30-35 | 2.6%→45.3% | (rest split B/C) | — | 0.944→0.467 |
+| NEDC | 35-50 | 63.4%→61.0% | 26.8%→26.8% | 9.8%→12.2% | 0.268→0.183 |
+| FTP75 | 15-30 | 71.7%→95.0% | 23.3%→1.7% | 5.0%→3.3% | 0.204→0.035 |
+| FTP75 | 30-35 | 88.8%→92.5% | 8.8%→1.2% | 2.5%→6.2% | 0.085→0.031 |
+| FTP75 | 35-50 | 87.5%→96.7% | 7.5%→0.0% | 5.0%→3.3% | 0.077→0.020 |
+
+**New finding, not in the original report.** In 5 of the 6 cycle×region cells the
+intervention *improved* actor-Q alignment (pulled the actor mean closer to
+argmax-Q). NEDC 15-30 Nm is the sole outlier where alignment got worse. This
+contradicts a naive reading of the original §3 narrative ("the actor moved the
+wrong way") as a general statement — it is true only at NEDC 15-30 Nm, not
+elsewhere.
+
+**Why this does not overturn the REFUTED verdict.** Alignment is a statement about
+the actor tracking *its own critic's* argmax, not about the critic's argmax being
+correct. Section 10.3 below shows the critic's own preference ordering — not just
+the actor's proximity to it — still under-weights OFF relative to ECMS across
+*every* region on *both* cycles, in both arms, regardless of how well-aligned the
+actor is to it. Pulling the actor closer to a still-miscalibrated critic optimum
+does not fix the vehicle-level gap: §10.2 shows V_CE_equiv got worse on both
+cycles even where alignment improved on 5/6 cells. This is consistent with — and
+sharpens — the original causal classification: the bottleneck is the critic's
+value ranking (or the reward/discount structure that shapes it), not actor
+displacement, and not coverage.
+
+### 10.2 §L — full vehicle metrics, both cycles, 3 seeds each
+
+**NEDC:** CONTROL V_CE mean=3.7666 (σ=0.0785, 95% CI [3.6778, 3.8554]);
+TREATMENT V_CE mean=3.8178 (σ=0.0643, 95% CI [3.7450, 3.8906]) — worse, CIs
+overlap. dSoC: CONTROL seeds {+0.28, −0.72, +0.23} pp; TREATMENT seeds
+{+1.42, +2.89, +1.47} pp — treatment consistently over-charges relative to
+control on NEDC (SoC target drift, not present in the original report's summary).
+
+**FTP75:** CONTROL V_CE mean=3.2889 (σ=0.0174, 95% CI [3.2692, 3.3085]);
+TREATMENT V_CE mean=3.2984 (σ=0.0184, 95% CI [3.2776, 3.3191]) — worse, CIs
+overlap. dSoC: CONTROL seeds {−0.53, −0.51, −0.07} pp; TREATMENT seeds
+{−1.35, −1.38, −1.49} pp — treatment consistently over-depletes on FTP75 (the
+opposite direction from NEDC, but the same qualitative effect: the intervention
+pushes SoC management further from target on both cycles).
+
+Neither cycle shows a statistically distinguishable V_CE improvement (both 95%
+CIs overlap), and the point estimate is worse on both — the V_CE figures
+themselves match the original run's E14 summary (already computed for both
+cycles); what this addendum adds is the *full* field set the original §L
+omitted (SoC min/max, REGEN%, mean |T_CE|/|T_EM|, elec_equiv, per-seed mode
+mix). The vehicle-level verdict is unchanged: **no improvement on either cycle,
+plus a newly-documented SoC-drift side effect** (NEDC treatment over-charges,
+FTP75 treatment over-depletes, relative to control on both).
+
+### 10.3 §N — matched-state SAC-vs-ECMS, actual Phase-6 checkpoints, both cycles
+
+Demand-alignment check passes (`max|T_SAC − T_ECMS| = 0.00e+00`) on both cycles,
+both arms — comparison is controller-independent as required.
+
+**NEDC (seed0):** SAC OFF% vs ECMS OFF% — 30-50 Nm: CONTROL 16.5% vs ECMS 52.5%,
+TREATMENT 20.9% vs ECMS 52.5%; 50-75 Nm: CONTROL/TREATMENT 0.0% vs ECMS 22.5%.
+ΔFuel at 30-50 Nm: +0.290 (CONTROL), +0.254 (TREATMENT) — the intervention closes
+essentially none of this gap.
+
+**FTP75 (seed0):** 30-50 Nm: CONTROL 34.1% vs ECMS 59.5%, TREATMENT 36.5% vs ECMS
+59.5%; 50-75 Nm: CONTROL 1.1% vs ECMS 12.4%, TREATMENT 2.2% vs ECMS 12.4%.
+ΔFuel at 30-50 Nm: +0.280 (CONTROL), +0.292 (TREATMENT) — again materially
+unchanged (if anything, marginally worse).
+
+This is new, previously-missing evidence (§N was NEDC-only and used stale
+Phase-5B checkpoints before this addendum) and it is the strongest single piece
+of support for the CASE classification already reached in §6: the SAC critic
+under-uses OFF relative to ECMS across the 30-75 Nm band on *both* cycles,
+*independent of* the conditional-coverage manipulation. Coverage and alignment
+moved; the ECMS gap did not.
+
+### 10.4 What is now closed vs what remains
+
+**Closed by this addendum:** §G/§H/§I/§J/§L/§N for FTP75 (previously NEDC-only);
+the full §J A/B/C/D categorical table for both cycles (previously scalar
+displacement only); the FTP75 Q-landscape figure
+(`results/phase6/figures/q_landscape_ab_FTP75.png`); the actual-checkpoint
+SAC-vs-ECMS comparison for both arms on both cycles (previously stale/NEDC-only).
+
+**Still not done, and not authorized by this addendum:** no new training was run;
+the entropy-temperature follow-up (§8/§Q) remains unstarted; the generalization
+inventory (§S) remains a separate, distinct task. The REFUTED classification in
+§6/§7 stands and is now reinforced, not weakened, by the additional evidence —
+the one genuinely new nuance (alignment improving in 5/6 cells) is a correction
+to the mechanism narrative, not to the outcome.

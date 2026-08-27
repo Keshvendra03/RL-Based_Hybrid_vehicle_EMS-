@@ -280,3 +280,22 @@ Before ending any session that touches training or the pipeline, update:
       state changed — append, never overwrite the previous snapshot
 - [ ] Commit working-tree changes (or note explicitly why not, e.g.
       mid-experiment)
+
+---
+
+## 7. Status update (2026-08-27) — supersedes §3/§4 narrative above
+
+§3/§4 above describe the pre-Phase-4 "ASSIST BLOB" diagnosis and are kept for
+history; they no longer reflect current status. Current state: Phases 4, 5,
+5B, and 6 are complete (`PHASE5_FINAL_REPORT.md`, `PHASE5B_FORENSIC_CLOSURE.md`,
+`PHASE6_FINAL_REPORT.md`; log entries E11-E14 in `EXPERIMENT_LOG.md`).
+Phase 6's controlled A/B (conditional-exploration coverage fix) was REFUTED,
+including a 2026-08-27 gap-closure addendum (`PHASE6_FINAL_REPORT.md` §10,
+`EXPERIMENT_LOG.md` E14 addendum) that ran the missing FTP75 forensics and the
+full actor A/B/C/D classification for both cycles — the outcome is unchanged
+and reinforced (SAC's OFF-usage gap vs ECMS in the 30-75 Nm band is essentially
+untouched by the intervention on both cycles). Current primary bottleneck:
+actor-side displacement at 15-30 Nm, plus a critic value-ranking gap vs ECMS at
+30-75 Nm. Next step (entropy temperature at 15-30 Nm) is proposed but NOT
+started — awaiting explicit authorisation, per the standing rule against
+auto-starting a second intervention.

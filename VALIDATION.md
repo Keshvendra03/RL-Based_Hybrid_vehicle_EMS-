@@ -263,3 +263,17 @@ demonstration at any point.
 with no critic correction there, no actor response, and worse fuel on both
 cycles (NEDC 3.7666 -> 3.8178; FTP75 3.2889 -> 3.2984). NEDC charge
 sustainability degraded 3/3 -> 2/3. Full detail: `PHASE6_FINAL_REPORT.md`.
+
+### Phase 6 gap-closure addendum (2026-08-27, no new training, no validated component touched)
+
+`results/phase6_ab_full.py` re-used the existing CONTROL/TREATMENT
+checkpoints and replay buffers (no retraining, no physics/benchmark/ECMS code
+touched) to run the FTP75 forensics and full actor A/B/C/D classification
+that the original Phase-6 pass only ran for NEDC. Matched-state SAC-vs-ECMS
+comparison on the actual Phase-6 checkpoints (both cycles, demand-alignment
+verified `max|T_SAC-T_ECMS|=0.00e+00`) confirms the SAC critic's OFF-usage gap
+vs ECMS at 30-75 Nm is essentially unchanged by the intervention on both
+cycles — reinforcing, not weakening, the REFUTED verdict. A newly-documented
+side effect: SoC drift direction is opposite per cycle (NEDC treatment
+over-charges vs control, FTP75 treatment over-depletes). Full detail:
+`PHASE6_FINAL_REPORT.md` §10.

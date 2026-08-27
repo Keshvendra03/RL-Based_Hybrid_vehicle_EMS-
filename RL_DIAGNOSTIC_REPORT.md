@@ -44,6 +44,22 @@ hold. There was no conflict at 30-35 Nm to repair.
   * Alignment predicts performance: FTP75 (the only benchmark-level result) is
     the most aligned config measured (75.8% aligned / 11.7% displaced).
 
+### GAP-CLOSURE NUANCE (2026-08-27, no new training — `PHASE6_FINAL_REPORT.md` §10)
+
+The "actor moved the WRONG way" line above generalizes from NEDC 15-30 Nm
+alone. Extending the A/B/C/D actor-alignment classification (which had only
+been computed for that one cell) to both cycles and all 3 regions shows the
+opposite in 5 of 6 cells: alignment IMPROVED with the intervention everywhere
+except NEDC 15-30 Nm (NEDC 30-35: 2.6%->45.3%; NEDC 35-50: ~flat; FTP75, all
+3 regions: 71.7->95.0, 88.8->92.5, 87.5->96.7). This does **not** overturn the
+REFUTED verdict or the bottleneck framing below it — matched-state SAC-vs-ECMS
+comparison (§10.3, run for the first time on the actual Phase-6 checkpoints on
+both cycles) shows the critic's own OFF-preference gap vs ECMS at 30-75 Nm is
+essentially unchanged regardless of how well the actor tracks that critic. The
+corrected framing: **actor-critic alignment is not the same as actor-ECMS
+optimality; the critic's own value ranking is the deeper constraint**, and
+NEDC 15-30 Nm additionally has an actor-specific regression on top of that.
+
 ### SUPERSEDED (kept for the record)
 
 ### CURRENT PRIMARY BOTTLENECK (Phase 5B, measured)

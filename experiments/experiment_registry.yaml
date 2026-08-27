@@ -562,6 +562,37 @@ experiments:
       Entropy temperature at 15-30 Nm on the gated + k_fb=2.5 config.
       NOT STARTED -- awaiting authorisation. Caveat: Phase 5 found
       target_entropy -1/-2/-3 indistinguishable at n=3 on the LINEAR config.
+    gap_closure_addendum:
+      date: 2026-08-27
+      no_new_training: true
+      script: results/phase6_ab_full.py
+      reason: >
+        Self-audit found G/H/I/J/N were NEDC-only and J reported only scalar
+        displacement, not the A/B/C/D classification. Closed on the same
+        checkpoints/replay buffers.
+      actor_alignment_pct_A_aligned:
+        NEDC_15_30: {control: 86.2, treatment: 27.6}
+        NEDC_30_35: {control: 2.6, treatment: 45.3}
+        NEDC_35_50: {control: 63.4, treatment: 61.0}
+        FTP75_15_30: {control: 71.7, treatment: 95.0}
+        FTP75_30_35: {control: 88.8, treatment: 92.5}
+        FTP75_35_50: {control: 87.5, treatment: 96.7}
+      note: >
+        5 of 6 cells IMPROVED alignment with treatment; NEDC 15-30 Nm is the
+        sole regression. Does not overturn REFUTED -- alignment tracks the
+        actor's own critic argmax, not correctness vs ECMS.
+      ecms_off_pct_gap_30_50:
+        NEDC: {control_sac: 16.5, treatment_sac: 20.9, ecms: 52.5}
+        FTP75: {control_sac: 34.1, treatment_sac: 36.5, ecms: 59.5}
+      soc_drift_side_effect:
+        NEDC_dSoC_pp: {control: [0.28, -0.72, 0.23], treatment: [1.42, 2.89, 1.47]}
+        FTP75_dSoC_pp: {control: [-0.53, -0.51, -0.07], treatment: [-1.35, -1.38, -1.49]}
+      conclusion: >
+        Critic's own OFF-preference gap vs ECMS is essentially unchanged by the
+        intervention on both cycles -- reinforces CASE 3 / REFUTED and points
+        at the critic's value ranking (not coverage, not actor displacement)
+        as the binding constraint. New SoC-drift side effect documented,
+        opposite sign per cycle (NEDC over-charges, FTP75 over-depletes).
 
 planned:
   - id: EXP-C

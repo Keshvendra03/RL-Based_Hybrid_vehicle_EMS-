@@ -611,6 +611,42 @@ indistinguishable at n=3 on the LINEAR config; this is justified only because
 the config and diagnosis are now different. If it fails, the unimodal Gaussian
 policy class is the limitation.
 
+### E14 gap-closure addendum (2026-08-27, NO NEW TRAINING)
+
+Self-audit found §G/H/I/J/N above were NEDC-only and §J reported only scalar
+displacement, not the full A/B/C/D classification. Closed via
+`results/phase6_ab_full.py` on the SAME checkpoints/replay buffers (no
+retraining). Full write-up: `PHASE6_FINAL_REPORT.md` §10. Raw:
+`results/phase6/phase6_forensics_{NEDC,FTP75}_FULL.txt`, figure
+`results/phase6/figures/q_landscape_ab_FTP75.png` (new).
+
+**§J full table (A_aligned %, CONTROL->TREATMENT):** NEDC 15-30 86.2->27.6
+(worse); NEDC 30-35 2.6->45.3 (better); NEDC 35-50 63.4->61.0 (~flat);
+FTP75 15-30 71.7->95.0 (better); FTP75 30-35 88.8->92.5 (better);
+FTP75 35-50 87.5->96.7 (better). **5 of 6 cells improved** -- the original
+"actor moved the wrong way" framing holds only at NEDC 15-30 Nm, not in
+general. Does not overturn REFUTED: alignment is actor-to-own-critic-argmax,
+not actor-to-optimal; §N below shows the critic's own ranking is still wrong
+regardless of alignment.
+
+**§N, actual Phase-6 checkpoints (previously stale Phase-5B numbers/NEDC-only),
+both cycles, seed0, matched states, demand-alignment verified exact:**
+30-50 Nm SAC-OFF% vs ECMS-OFF%: NEDC CONTROL 16.5% vs 52.5%, TREATMENT 20.9% vs
+52.5%; FTP75 CONTROL 34.1% vs 59.5%, TREATMENT 36.5% vs 59.5%. 50-75 Nm: SAC
+~0-2% vs ECMS 12.4-22.5% on both arms, both cycles. The OFF-usage gap vs ECMS
+is essentially unchanged by the intervention on both cycles -- strongest direct
+evidence that the critic's own value ranking, not coverage or actor
+displacement, is the binding constraint.
+
+**§L full fields (previously V_CE-only for FTP75):** new SoC-drift side effect
+found -- NEDC treatment over-charges vs control (dSoC +1.42/+2.89/+1.47pp vs
++0.28/-0.72/+0.23pp); FTP75 treatment over-depletes vs control
+(-1.35/-1.38/-1.49pp vs -0.53/-0.51/-0.07pp). Not previously documented.
+
+**Still not done / not authorised:** no training run; entropy-temperature
+follow-up still pending explicit go-ahead; generalization inventory (§S) still
+untouched and kept separate per the brief.
+
 ---
 
 ## Pending
