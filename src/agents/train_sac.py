@@ -90,6 +90,7 @@ from src.agents.nstep_sac import NStepSAC, NStepReplayBuffer
 from src.agents.per import SACPER, PrioritizedReplayBuffer
 from src.env.ems_env import EMSEnv, SOC_TARGET, TERM_TOL
 from src.agents.instrumentation import SACDiagnostics, CheckpointRule
+from src.agents.targeted_exploration import make_targeted
 
 # --------------------------------------------------------------------------- #
 # Tested & proven reference numbers (src/baselines/ecms.py, evaluate_advanced.py)
@@ -332,6 +333,14 @@ def main():
                         "the total Q variation across the action range "
                         "(0.18-1.08), so the actor cannot rank actions. "
                         "See RL_DIAGNOSTIC_REPORT.md.")
+    p.add_argument("--targeted-exploration", action="store_true",
+                   help="PHASE 6 TREATMENT: training-time-only conditional "
+                        "exploration that injects feasible engine-OFF actions "
+                        "in 15-35 Nm at SoC 40-55%%. Raises replay COVERAGE "
+                        "only; never used at evaluation; no benchmark/ECMS "
+                        "labels. Default OFF = CONTROL.")
+    p.add_argument("--te-prob", type=float, default=0.30,
+                   help="injection probability inside the activation region")
     p.add_argument("--action-map", default="linear", choices=["linear", "modeaware", "modeaware_gated"],
                    help="action->u reparameterization. 'linear' (default) is the "
                         "original mapping. 'modeaware' allocates fixed fractions "
@@ -435,8 +444,21 @@ def main():
     else:
         model_cls, buf_cls = SAC, ReplayBuffer
 
+    # PHASE 6: wrap the selected algorithm with the targeted-exploration mixin.
+    # With --targeted-exploration absent (CONTROL) the override is a no-op and
+    # stock SB3 behaviour is preserved exactly.
+    _base_cls = model_cls
+    model_cls = make_targeted(_base_cls)
+    _te_kwargs = dict(te_enabled=args.targeted_exploration,
+                      te_prob=args.te_prob,
+                      te_action_map=args.action_map)
+
     if args.resume and (out_dir / "sac_ems_last.zip").exists():
         model = model_cls.load(out_dir / "sac_ems_last", env=env, tensorboard_log=tb_log)
+        model.te_enabled = args.targeted_exploration
+        model.te_prob = args.te_prob
+        model.te_action_map = args.action_map
+        model.te_stats = dict(steps=0, in_region=0, feasible=0, injected=0)
         buf = out_dir / "replay_buffer.pkl"
         if buf.exists():
             model.load_replay_buffer(buf)
@@ -466,6 +488,7 @@ def main():
             tensorboard_log=tb_log,
             replay_buffer_class=buf_cls if buf_cls is not ReplayBuffer else None,
             replay_buffer_kwargs=extra_buf_kwargs or None,
+            **_te_kwargs,
         )
 
         if args.prefill_mode == "constant" and args.prefill_eps > 0:
@@ -489,7 +512,7 @@ def main():
         cb.best = float(best_file.read_text())
 
     print(f"\n[train] {args.timesteps:,} steps  |  run={run_name}  "
-          f"eq_factor={args.eq_factor}  k_fb={args.k_fb}  action_map={args.action_map}  gamma={args.gamma}  deadband={args.soc_deadband}")
+          f"eq_factor={args.eq_factor}  k_fb={args.k_fb}  action_map={args.action_map}  gamma={args.gamma}  deadband={args.soc_deadband}  targeted_exploration={args.targeted_exploration}")
     for c in cycle_list:
         print(f"[train] {c}: rule-based benchmark {RULE_BASED_BENCHMARK.get(c,'?')}  "
               f"ECMS target {ECMS_TARGET.get(c,'?')}")
@@ -519,6 +542,12 @@ def main():
     )
     model.save(out_dir / "sac_ems_last")
     model.save_replay_buffer(out_dir / "replay_buffer.pkl")
+    if getattr(model, "te_enabled", False):
+        st = model.te_stats
+        print(f"[targeted-exploration] steps={st['steps']} in_region={st['in_region']} "
+              f"feasible={st['feasible']} injected={st['injected']} "
+              f"({100*st['injected']/max(st['steps'],1):.2f}% of all steps)")
+        (out_dir / "te_stats.json").write_text(json.dumps(st, indent=2))
 
     finals = [rollout_deterministic(model, c, args.eq_factor, args.soc_deadband,
                                      args.lookahead, args.k_fb, args.action_map,
