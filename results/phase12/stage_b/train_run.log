@@ -1,0 +1,23 @@
+[B1] frozen config written -> results/phase12/stage_b/config_frozen.json
+[B3] action-path integrity dry-run ...
+     predict_does_not_trigger_intervention: True
+     predict_class_is_stock_SAC: True
+     n_injected_in_dry_run: 305
+     all_injected_actions_in_bounds: True
+     all_injected_engine_ON: True
+     injected_action_range: [-0.847447395324707, -0.5482397675514221]
+     injected_executed_TCE_range: [21.271914849519604, 75.78659483460059]
+     injected_executed_TCE_mean: 37.34602942933031
+     action_space: Box(-1.0, 1.0, (1,), float32)
+     reachable_set_unchanged: True
+     te_disabled_never_injects: True
+     PASS: True
+[B3] PASS
+[B4] three-seed training (150k each) ...
+  --- seed 0
+      {'seed': 0, 'best_score': 3.83601372026395, 'final_eval_v_ce': 3.83601372026395, 'final_eval_soc': np.float64(0.5078861715642905), 'te_stats': {'steps': 150016, 'in_region': 47232, 'feasible': 47232, 'injected': 11598, 'injected_tce_sum': 440306.737779348, 'injected_tce_min': 21.247035740725305, 'injected_tce_max': 81.45810537799292}, 'n_evals': 61}
+  --- seed 1
+      {'seed': 1, 'best_score': 3.7485805309103735, 'final_eval_v_ce': 3.7485805309103735, 'final_eval_soc': np.float64(0.4992922694820061), 'te_stats': {'steps': 150016, 'in_region': 47232, 'feasible': 47232, 'injected': 11807, 'injected_tce_sum': 447169.8356905941, 'injected_tce_min': 21.249657084634023, 'injected_tce_max': 81.37154240893139}, 'n_evals': 61}
+  --- seed 2
+      {'seed': 2, 'best_score': np.float64(3.856431481063805), 'final_eval_v_ce': 3.830790466625146, 'final_eval_soc': np.float64(0.5225641014438659), 'te_stats': {'steps': 150016, 'in_region': 47232, 'feasible': 47232, 'injected': 11727, 'injected_tce_sum': 442901.129965915, 'injected_tce_min': 21.250213055589395, 'injected_tce_max': 81.38209895494566}, 'n_evals': 61}
+[B4] done -> results/phase12/stage_b/train_summary.json

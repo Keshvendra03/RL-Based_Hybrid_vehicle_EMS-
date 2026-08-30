@@ -1,0 +1,20 @@
+{
+  "predict_does_not_trigger_intervention": true,
+  "predict_class_is_stock_SAC": true,
+  "n_injected_in_dry_run": 305,
+  "all_injected_actions_in_bounds": true,
+  "all_injected_engine_ON": true,
+  "injected_action_range": [
+    -0.847447395324707,
+    -0.5482397675514221
+  ],
+  "injected_executed_TCE_range": [
+    21.271914849519604,
+    75.78659483460059
+  ],
+  "injected_executed_TCE_mean": 37.34602942933031,
+  "action_space": "Box(-1.0, 1.0, (1,), float32)",
+  "reachable_set_unchanged": true,
+  "te_disabled_never_injects": true,
+  "PASS": true
+}

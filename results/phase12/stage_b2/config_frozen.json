@@ -1,0 +1,35 @@
+{
+  "cycle": "NEDC",
+  "eq_factor": 0.2717,
+  "k_fb": 2.5,
+  "gamma": 0.2,
+  "n_step": 1,
+  "action_map": "modeaware_gated",
+  "lookahead": 5,
+  "lambda_soc": 2.0,
+  "soc_deadband": 0.1,
+  "target_entropy": "auto",
+  "learning_rate": 0.0003,
+  "buffer_size": 300000,
+  "batch_size": 512,
+  "tau": 0.005,
+  "train_freq": 64,
+  "gradient_steps": 16,
+  "net_arch": [
+    256,
+    256
+  ],
+  "timesteps": 150000,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "clip_eq_eff": true,
+  "te_prob": 0.25,
+  "te_soc_cap": 0.55,
+  "te_deep_window_Nm": 15.0,
+  "te_interval": "[max(TCE_min_feasible, TCE_max_feasible - 15), TCE_max_feasible]  (env-authoritative)",
+  "reward_change_vs_control": "clip_eq_eff=True ONLY (Phase 12A); nothing else",
+  "intervention_vs_12B": "lower bound = TCE_max_feasible-15 (not 1.3*demand); SoC cap 0.55 (not 0.70)"
+}

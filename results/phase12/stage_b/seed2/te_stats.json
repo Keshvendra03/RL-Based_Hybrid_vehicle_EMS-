@@ -1,0 +1,9 @@
+{
+  "steps": 150016,
+  "in_region": 47232,
+  "feasible": 47232,
+  "injected": 11727,
+  "injected_tce_sum": 442901.129965915,
+  "injected_tce_min": 21.250213055589395,
+  "injected_tce_max": 81.38209895494566
+}

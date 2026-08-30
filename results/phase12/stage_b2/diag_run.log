@@ -1,0 +1,51 @@
+== CONTROL reference ==
+== seed 0 ==
+== seed 1 ==
+== seed 2 ==
+
+================ §13  state-normalized DEEP-LPS coverage  frac(rho>=0.75) / frac(within 15Nm of TCE_max)
+run                               25-30            30-35            35-50
+CTRL 2.5                  0.3173/0.3628    0.2452/0.2714    0.2376/0.1886
+CTRL 2.5                    0.4155/0.45    0.2832/0.3012    0.3093/0.2582
+CTRL _s2                  0.3995/0.4329    0.2734/0.2929     0.3996/0.351
+B2 seed0                  0.4463/0.4997     0.373/0.3909     0.4745/0.437
+B2 seed1                  0.4865/0.5401    0.3971/0.4153     0.446/0.4127
+B2 seed2                  0.5162/0.5746    0.3746/0.3922    0.4666/0.4372
+
+================ §14/§15/§16  critic argmax T_CE (CORE 25-50) + Bellman residual
+run/ckpt                         tce_Q   tce_R  tce_pi  dT(R-Q)  resid_aR  resid_deep  Q@deep%
+CTRL 2.5                       24.5133   63.22 36.8067     38.7   -0.0179     -0.0112      0.2
+CTRL 2.5                       32.4267   63.22 35.1067    30.78    -0.004     -0.0009    0.333
+CTRL _s2                       58.6533   63.22 42.4133     4.56   -0.0133     -0.0135    0.933
+B2 s0 sac_ems_50k              32.7267   63.22 26.1867  30.4933   -0.0522     -0.0386    0.333
+B2 s0 sac_ems_100k               33.38   63.22   45.96  29.8467    0.0067      0.0063    0.467
+B2 s0 sac_ems_150k             28.7533   63.22 33.0533  34.4667   -0.0129     -0.0117      0.2
+B2 s0 sac_ems_best             33.8267   63.22   33.12  29.3933   -0.0088     -0.0095    0.467
+     -> seed0 tce_Q stability: mean=32.17 std=2.01 [28.75,33.83]
+B2 s1 sac_ems_50k              28.9333   63.22 18.7533  34.2867   -0.0407     -0.0322      0.2
+B2 s1 sac_ems_100k             30.5133   63.22 24.9333  32.7333   -0.0422     -0.0338    0.333
+B2 s1 sac_ems_150k             30.9867   63.22 32.5133  32.2267   -0.0223     -0.0168    0.467
+B2 s1 sac_ems_best             40.5067   63.22   23.58    22.72   -0.0234      -0.019      0.6
+     -> seed1 tce_Q stability: mean=32.73 std=4.55 [28.93,40.51]
+B2 s2 sac_ems_50k               5.4067   63.22 30.1067    57.82   -0.0624     -0.0333      0.0
+B2 s2 sac_ems_100k               32.78   63.22 50.6467    30.44    0.0215      0.0279    0.533
+B2 s2 sac_ems_150k              4.4333   63.22   43.26    58.82   -0.0095     -0.0017      0.0
+B2 s2 sac_ems_best                30.5   63.22   46.38  32.7133   -0.0494     -0.0387      0.4
+     -> seed2 tce_Q stability: mean=18.28 std=13.39 [4.43,32.78]
+
+================ §19  dual-reward audit (best ckpt)
+  seed0: SoC_max=50.4%  %>old_thr=0.0  cumR_patched=-78.5512  cumR_original=-78.5512  dR=0.0  n_affected=0
+  seed1: SoC_max=50.0%  %>old_thr=0.0  cumR_patched=-63.7134  cumR_original=-63.7134  dR=0.0  n_affected=0
+  seed2: SoC_max=50.4%  %>old_thr=0.0  cumR_patched=-51.5649  cumR_original=-51.5649  dR=0.0  n_affected=0
+
+================ §18  vehicle (best ckpt)  [CONTROL mean 3.7666, RB 3.5056, ECMS 3.1887]
+run             v_ce_equiv  dSoC_pp     CS  viol   OFF%   LPS%  eng_on_s
+CTRL 2.5            3.6862     0.28   True     0   39.8   27.9       376
+CTRL 2.5            3.8431    -0.72   True     0   38.2   32.9       390
+CTRL _s2            3.7704     0.23   True     0   37.8   28.6       393
+B2 seed0            3.7077     0.38   True     0   42.2   29.9       355
+B2 seed1            3.7625    -0.11   True     0   37.5   25.4       396
+B2 seed2            3.8497    -0.68   True     0   37.4   32.2       397
+  B2 mean V_CE = 3.7733 +/- 0.0585
+
+[saved] results/phase12/phase12_stage_b2_summary.json

@@ -1,0 +1,490 @@
+[
+  {
+    "step": 2440,
+    "steps": 2440,
+    "in_region": 768,
+    "feasible": 768,
+    "injected": 198,
+    "mean_injected_tce": 37.64884738451418
+  },
+  {
+    "step": 4880,
+    "steps": 4880,
+    "in_region": 1536,
+    "feasible": 1536,
+    "injected": 379,
+    "mean_injected_tce": 37.961241577471995
+  },
+  {
+    "step": 7320,
+    "steps": 7320,
+    "in_region": 2304,
+    "feasible": 2304,
+    "injected": 579,
+    "mean_injected_tce": 38.08354181760539
+  },
+  {
+    "step": 9760,
+    "steps": 9760,
+    "in_region": 3072,
+    "feasible": 3072,
+    "injected": 784,
+    "mean_injected_tce": 38.04766729693283
+  },
+  {
+    "step": 12200,
+    "steps": 12200,
+    "in_region": 3840,
+    "feasible": 3840,
+    "injected": 975,
+    "mean_injected_tce": 38.111419325050655
+  },
+  {
+    "step": 14640,
+    "steps": 14640,
+    "in_region": 4608,
+    "feasible": 4608,
+    "injected": 1169,
+    "mean_injected_tce": 38.36237066025831
+  },
+  {
+    "step": 17080,
+    "steps": 17080,
+    "in_region": 5376,
+    "feasible": 5376,
+    "injected": 1363,
+    "mean_injected_tce": 38.30668120466522
+  },
+  {
+    "step": 19520,
+    "steps": 19520,
+    "in_region": 6144,
+    "feasible": 6144,
+    "injected": 1555,
+    "mean_injected_tce": 38.31719710841442
+  },
+  {
+    "step": 21960,
+    "steps": 21960,
+    "in_region": 6912,
+    "feasible": 6912,
+    "injected": 1727,
+    "mean_injected_tce": 38.26578325556978
+  },
+  {
+    "step": 24400,
+    "steps": 24400,
+    "in_region": 7680,
+    "feasible": 7680,
+    "injected": 1909,
+    "mean_injected_tce": 38.25449058325961
+  },
+  {
+    "step": 26840,
+    "steps": 26840,
+    "in_region": 8448,
+    "feasible": 8448,
+    "injected": 2084,
+    "mean_injected_tce": 38.18021358117338
+  },
+  {
+    "step": 29280,
+    "steps": 29280,
+    "in_region": 9216,
+    "feasible": 9216,
+    "injected": 2259,
+    "mean_injected_tce": 38.212701967656095
+  },
+  {
+    "step": 31720,
+    "steps": 31720,
+    "in_region": 9984,
+    "feasible": 9984,
+    "injected": 2437,
+    "mean_injected_tce": 38.21626371807634
+  },
+  {
+    "step": 34160,
+    "steps": 34160,
+    "in_region": 10752,
+    "feasible": 10752,
+    "injected": 2642,
+    "mean_injected_tce": 38.18027748005098
+  },
+  {
+    "step": 36600,
+    "steps": 36600,
+    "in_region": 11520,
+    "feasible": 11520,
+    "injected": 2823,
+    "mean_injected_tce": 38.12013365203655
+  },
+  {
+    "step": 39040,
+    "steps": 39040,
+    "in_region": 12288,
+    "feasible": 12288,
+    "injected": 3021,
+    "mean_injected_tce": 38.07598650731941
+  },
+  {
+    "step": 41480,
+    "steps": 41480,
+    "in_region": 13056,
+    "feasible": 13056,
+    "injected": 3214,
+    "mean_injected_tce": 38.08670126059884
+  },
+  {
+    "step": 43920,
+    "steps": 43920,
+    "in_region": 13824,
+    "feasible": 13824,
+    "injected": 3407,
+    "mean_injected_tce": 38.0763899321527
+  },
+  {
+    "step": 46360,
+    "steps": 46360,
+    "in_region": 14592,
+    "feasible": 14592,
+    "injected": 3578,
+    "mean_injected_tce": 38.05146010849708
+  },
+  {
+    "step": 48800,
+    "steps": 48800,
+    "in_region": 15360,
+    "feasible": 15360,
+    "injected": 3770,
+    "mean_injected_tce": 37.99134134858661
+  },
+  {
+    "step": 51240,
+    "steps": 51240,
+    "in_region": 16128,
+    "feasible": 16128,
+    "injected": 3951,
+    "mean_injected_tce": 38.01832799931152
+  },
+  {
+    "step": 53680,
+    "steps": 53680,
+    "in_region": 16896,
+    "feasible": 16896,
+    "injected": 4117,
+    "mean_injected_tce": 38.01017566766492
+  },
+  {
+    "step": 56120,
+    "steps": 56120,
+    "in_region": 17664,
+    "feasible": 17664,
+    "injected": 4284,
+    "mean_injected_tce": 38.01160034320044
+  },
+  {
+    "step": 58560,
+    "steps": 58560,
+    "in_region": 18432,
+    "feasible": 18432,
+    "injected": 4440,
+    "mean_injected_tce": 37.971454507224024
+  },
+  {
+    "step": 61000,
+    "steps": 61000,
+    "in_region": 19200,
+    "feasible": 19200,
+    "injected": 4620,
+    "mean_injected_tce": 37.935055153608225
+  },
+  {
+    "step": 63440,
+    "steps": 63440,
+    "in_region": 19968,
+    "feasible": 19968,
+    "injected": 4828,
+    "mean_injected_tce": 37.92637273935687
+  },
+  {
+    "step": 65880,
+    "steps": 65880,
+    "in_region": 20736,
+    "feasible": 20736,
+    "injected": 5016,
+    "mean_injected_tce": 37.94055969958406
+  },
+  {
+    "step": 68320,
+    "steps": 68320,
+    "in_region": 21504,
+    "feasible": 21504,
+    "injected": 5205,
+    "mean_injected_tce": 37.93300218782051
+  },
+  {
+    "step": 70760,
+    "steps": 70760,
+    "in_region": 22272,
+    "feasible": 22272,
+    "injected": 5382,
+    "mean_injected_tce": 37.924542931136195
+  },
+  {
+    "step": 73200,
+    "steps": 73200,
+    "in_region": 23040,
+    "feasible": 23040,
+    "injected": 5560,
+    "mean_injected_tce": 37.932070065553916
+  },
+  {
+    "step": 75640,
+    "steps": 75640,
+    "in_region": 23808,
+    "feasible": 23808,
+    "injected": 5742,
+    "mean_injected_tce": 37.96126071931947
+  },
+  {
+    "step": 78080,
+    "steps": 78080,
+    "in_region": 24576,
+    "feasible": 24576,
+    "injected": 5932,
+    "mean_injected_tce": 37.971729969315376
+  },
+  {
+    "step": 80520,
+    "steps": 80520,
+    "in_region": 25344,
+    "feasible": 25344,
+    "injected": 6137,
+    "mean_injected_tce": 37.97865682362993
+  },
+  {
+    "step": 82960,
+    "steps": 82960,
+    "in_region": 26112,
+    "feasible": 26112,
+    "injected": 6301,
+    "mean_injected_tce": 37.97428466897531
+  },
+  {
+    "step": 85400,
+    "steps": 85400,
+    "in_region": 26880,
+    "feasible": 26880,
+    "injected": 6495,
+    "mean_injected_tce": 37.948935802732876
+  },
+  {
+    "step": 87840,
+    "steps": 87840,
+    "in_region": 27648,
+    "feasible": 27648,
+    "injected": 6681,
+    "mean_injected_tce": 38.01065180443978
+  },
+  {
+    "step": 90280,
+    "steps": 90280,
+    "in_region": 28416,
+    "feasible": 28416,
+    "injected": 6894,
+    "mean_injected_tce": 38.0411253539019
+  },
+  {
+    "step": 92720,
+    "steps": 92720,
+    "in_region": 29184,
+    "feasible": 29184,
+    "injected": 7090,
+    "mean_injected_tce": 38.04323684537952
+  },
+  {
+    "step": 95160,
+    "steps": 95160,
+    "in_region": 29952,
+    "feasible": 29952,
+    "injected": 7285,
+    "mean_injected_tce": 38.04517848380738
+  },
+  {
+    "step": 97600,
+    "steps": 97600,
+    "in_region": 30720,
+    "feasible": 30720,
+    "injected": 7476,
+    "mean_injected_tce": 38.03089635620641
+  },
+  {
+    "step": 100040,
+    "steps": 100040,
+    "in_region": 31488,
+    "feasible": 31488,
+    "injected": 7696,
+    "mean_injected_tce": 38.063033293039645
+  },
+  {
+    "step": 102480,
+    "steps": 102480,
+    "in_region": 32256,
+    "feasible": 32256,
+    "injected": 7880,
+    "mean_injected_tce": 38.04706047895026
+  },
+  {
+    "step": 104920,
+    "steps": 104920,
+    "in_region": 33024,
+    "feasible": 33024,
+    "injected": 8067,
+    "mean_injected_tce": 38.01944081854193
+  },
+  {
+    "step": 107360,
+    "steps": 107360,
+    "in_region": 33792,
+    "feasible": 33792,
+    "injected": 8263,
+    "mean_injected_tce": 37.99778588726054
+  },
+  {
+    "step": 109800,
+    "steps": 109800,
+    "in_region": 34560,
+    "feasible": 34560,
+    "injected": 8448,
+    "mean_injected_tce": 37.987999628160225
+  },
+  {
+    "step": 112240,
+    "steps": 112240,
+    "in_region": 35328,
+    "feasible": 35328,
+    "injected": 8635,
+    "mean_injected_tce": 37.96745912888976
+  },
+  {
+    "step": 114680,
+    "steps": 114680,
+    "in_region": 36096,
+    "feasible": 36096,
+    "injected": 8822,
+    "mean_injected_tce": 37.958830069953706
+  },
+  {
+    "step": 117120,
+    "steps": 117120,
+    "in_region": 36864,
+    "feasible": 36864,
+    "injected": 9009,
+    "mean_injected_tce": 37.95312036551921
+  },
+  {
+    "step": 119560,
+    "steps": 119560,
+    "in_region": 37632,
+    "feasible": 37632,
+    "injected": 9232,
+    "mean_injected_tce": 37.977308158889
+  },
+  {
+    "step": 122000,
+    "steps": 122000,
+    "in_region": 38400,
+    "feasible": 38400,
+    "injected": 9427,
+    "mean_injected_tce": 37.95539371687482
+  },
+  {
+    "step": 124440,
+    "steps": 124440,
+    "in_region": 39168,
+    "feasible": 39168,
+    "injected": 9617,
+    "mean_injected_tce": 37.94039822692452
+  },
+  {
+    "step": 126880,
+    "steps": 126880,
+    "in_region": 39936,
+    "feasible": 39936,
+    "injected": 9807,
+    "mean_injected_tce": 37.93722261749266
+  },
+  {
+    "step": 129320,
+    "steps": 129320,
+    "in_region": 40704,
+    "feasible": 40704,
+    "injected": 9992,
+    "mean_injected_tce": 37.918661868651505
+  },
+  {
+    "step": 131760,
+    "steps": 131760,
+    "in_region": 41472,
+    "feasible": 41472,
+    "injected": 10182,
+    "mean_injected_tce": 37.930912792571995
+  },
+  {
+    "step": 134200,
+    "steps": 134200,
+    "in_region": 42240,
+    "feasible": 42240,
+    "injected": 10368,
+    "mean_injected_tce": 37.93283648409774
+  },
+  {
+    "step": 136640,
+    "steps": 136640,
+    "in_region": 43008,
+    "feasible": 43008,
+    "injected": 10556,
+    "mean_injected_tce": 37.919918164499066
+  },
+  {
+    "step": 139080,
+    "steps": 139080,
+    "in_region": 43776,
+    "feasible": 43776,
+    "injected": 10748,
+    "mean_injected_tce": 37.92352075033538
+  },
+  {
+    "step": 141520,
+    "steps": 141520,
+    "in_region": 44544,
+    "feasible": 44544,
+    "injected": 10943,
+    "mean_injected_tce": 37.91981473340652
+  },
+  {
+    "step": 143960,
+    "steps": 143960,
+    "in_region": 45312,
+    "feasible": 45312,
+    "injected": 11122,
+    "mean_injected_tce": 37.93701169800663
+  },
+  {
+    "step": 146400,
+    "steps": 146400,
+    "in_region": 46080,
+    "feasible": 46080,
+    "injected": 11304,
+    "mean_injected_tce": 37.965448493027985
+  },
+  {
+    "step": 148840,
+    "steps": 148840,
+    "in_region": 46848,
+    "feasible": 46848,
+    "injected": 11509,
+    "mean_injected_tce": 37.95184689719861
+  }
+]

@@ -1,0 +1,48 @@
+== CONTROL reference ==
+== seed 0 ==
+== seed 1 ==
+== seed 2 ==
+
+================ B5  replay coverage: frac(executed T_CE >= 50 Nm) by demand band
+run                           15-25    25-30    30-35    35-50
+CTRL models_p5s0_k2.5           0.0    0.038   0.0772   0.3135
+CTRL models_p5_k2.5             0.0   0.0776   0.1431   0.3698
+CTRL models_p5_k2.5_s2          0.0    0.125   0.1211   0.4577
+12B seed0                       0.0   0.0319   0.1279   0.4547
+12B seed1                       0.0   0.0204   0.1213   0.4489
+12B seed2                       0.0   0.0859   0.0975   0.5094
+
+================ B6/B7  critic argmax T_CE (CORE 25-50 Nm) + Bellman residual @ a_R*
+run/ckpt                             tce_Q   tce_R  tce_pi  dT(R-Q)  dT(Q-pi)  resid_aR
+CTRL models_p5s0_k2.5                24.58   63.22 36.8733    38.66  -12.3067   -0.0179
+CTRL models_p5_k2.5                  32.52   63.22 35.0933  30.6933   -2.5333    -0.004
+CTRL models_p5_k2.5_s2             58.8267   63.22 42.4667     4.42     16.34   -0.0133
+12B s0 sac_ems_50k                 43.6733   63.22   24.98  19.5467   18.7133   -0.0247
+12B s0 sac_ems_100k                  49.92   63.22   34.68  13.2933   15.2533    0.0015
+12B s0 sac_ems_150k                  37.46   63.22 37.5267    25.76     -0.04    0.0022
+12B s0 sac_ems_best                  22.42   63.22 23.8467  40.8133   -1.4467    -0.024
+12B s1 sac_ems_50k                    6.38   63.22   22.36  56.8333    -15.98   -0.1003
+12B s1 sac_ems_100k                50.7733   63.22    34.0  12.4467   16.7733    0.0056
+12B s1 sac_ems_150k                34.1133   63.22   44.56  29.1067    -10.44   -0.0266
+12B s1 sac_ems_best                44.7733   63.22 47.9667    18.46   -3.2067   -0.0153
+12B s2 sac_ems_50k                 39.9933   63.22 26.7267  23.2533   13.2533   -0.0589
+12B s2 sac_ems_100k                20.3467   63.22 36.0533    42.88  -15.7067   -0.0417
+12B s2 sac_ems_150k                  35.14   63.22 27.0267    28.12       8.1     -0.02
+12B s2 sac_ems_best                46.8933   63.22 34.2933  16.3467     12.56   -0.0267
+
+================ B8  dual-reward audit (best ckpt eval)
+  seed0: SoC_max=50.8%  %>thr=0.0  cumR_corr=-75.304  cumR_orig=-75.304  dR=0.0  n_affected=0
+  seed1: SoC_max=50.0%  %>thr=0.0  cumR_corr=-47.2227  cumR_orig=-47.2227  dR=0.0  n_affected=0
+  seed2: SoC_max=52.3%  %>thr=0.0  cumR_corr=-53.9365  cumR_orig=-53.9365  dR=0.0  n_affected=0
+
+================ B9  vehicle-level (best ckpt, NEDC)   [CONTROL mean 3.7666, RB 3.5056, ECMS 3.1887]
+run             v_ce_equiv  dSoC_pp   CS  viol   OFF%  ASSIST%   LPS%  eng_on_s
+CTRL models_p       3.6862     0.28 True     0   39.8     15.3   27.9       376
+CTRL models_p       3.8431    -0.72 True     0   38.2     12.0   32.9       390
+CTRL models_p       3.7704     0.23 True     0   37.8     16.6   28.6       393
+12B seed0           3.8360     0.79 True     0   36.9     13.8   32.3       401
+12B seed1           3.7486    -0.07 True     0   38.2     13.9   30.9       390
+12B seed2           3.8308     2.26 False     0   38.2     12.4   32.4       390
+  12B mean V_CE = 3.8051 +/- 0.0400   (CONTROL 3.7666)
+
+[saved] results/phase12/stage_b/diagnostics.json
