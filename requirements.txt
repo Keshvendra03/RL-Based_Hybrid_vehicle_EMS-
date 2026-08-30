@@ -5,3 +5,4 @@ matplotlib>=3.7
 gymnasium>=0.29
 torch>=2.2
 pytest>=8.0
+stable-baselines3>=2.2.1
