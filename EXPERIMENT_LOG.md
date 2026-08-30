@@ -649,11 +649,235 @@ untouched and kept separate per the brief.
 
 ---
 
+## E15 — Phase 7: economic-value / costate forensic calibration (2026-08-27, NO TRAINING)
+
+**Hypothesis.** The residual SAC-vs-benchmark gap is primarily an *economic*
+error — battery energy / SoC mis-valued through the effective equivalent-factor
+/ costate (`eq_factor_eff = eq_factor + k_fb·(0.5 − soc)`).
+
+**Control.** Gated `k_fb=2.5` Phase-5 candidate, unchanged (git `f1f45c5`;
+trained at `9a125ad`; 3 seeds; γ=0.20, n_step=1, eq_factor 0.2717/0.4981,
+target_entropy auto, lr 3e-4, batch 512, buffer 300k, grad_steps 16, lookahead 5,
+150k steps). **Treatment: none** — analysis only on existing checkpoints/buffers.
+**Changed variable: none.** git before = git after = `f1f45c5` (+ this doc commit).
+Scripts: `results/phase7_forensics.py`, `results/phase7_figures.py`.
+Output: `results/phase7/` (raw txt, `data/*.json`, `matched_states_*.csv`, figures),
+`PHASE7_FINAL_REPORT.md`.
+
+**Numerical results.**
+
+| measurement | NEDC | FTP75 |
+|---|---|---|
+| CONTROL effective price, median (ECMS units) | **2.817** | 2.721 |
+| … as ×λ₀ (1.3125) | 2.15× | 2.07× |
+| fraction of moving episode priced > λ₀ | 98.8 % | 100 % |
+| **ECMS's own effective λ over its own rollout, median** | **2.776** | 2.846 |
+| median visited SoC (pre-decision, moving) | 37.5 % | 47.4 % |
+| `k_fb` to bring *median* price to λ₀ | ≤ 0 (refuted) | ≤ 0 |
+| `k_fb` to match ECMS median effective λ | **2.43** (≈ CONTROL) | 3.50 |
+| NEDC 30–35 Nm: OFF% SAC / argmaxQ / ECMS (matched, ECMS traj.) | **0 / 87 / 40** | — |
+| FTP75 15–30 Nm: OFF% SAC / argmaxQ / ECMS | — | **33 / 80 / 89** |
+| ΔQ(OFF−ASSIST) median, NEDC 30–35 (>0%) | +0.0234 (91 %) | — |
+| median ERROR_reward = r(a_ECMS)−r(a_SAC) (all focus regions) | +0.0007…+0.0020 | +0.0010…+0.0021 |
+| median ERROR_critic = Q(a_ECMS)−Q(a_SAC) | −0.0022…−0.0091 | −0.0019…−0.0058 |
+| corr(ERROR_critic, eq-price) | −0.00…+0.31 | −0.04…+0.33 |
+| actor P(OFF) vs `k_fb` {1.656,2.5,3.0} at NEDC SoC 32–42 % | 48 / 48 / 48 % | (FTP75: 82/58/– responsive) |
+| SAC−ECMS gap total (seed0, matched demand) | **+0.4975** | **+0.4601** |
+| gap: mode-selection / engine-op-pt / batt-mgmt / 0–15 over-EV | ≈+0.32 / +0.03–0.13 / +0.001 / +0.14 | ≈+0.22 / +0.06–0.11 / +0.006 / +0.12 |
+| cross-cycle: NEDC→FTP75 / FTP75→NEDC (3-seed mean, CS) | 3.382 (0/3) / 4.311 (0/3) | — |
+
+**Conclusion.** Economic hypothesis **REJECTED**. The CONTROL is not
+over-pricing battery energy relative to the proven-optimal closed-loop reference
+(ECMS); `k_fb` is a flat plateau in [2.0, 3.0] and is not the lever. The
+binding constraint is **actor-side**: the squashed-Gaussian policy will not
+place mass on the engine-OFF region of the action range at 15–35 Nm even though
+its own critic's arg-max — and ECMS — do. `Q(a)` is bimodal; the actor sits on
+the LPS lobe. `ERROR_reward ≥ 0` and `corr(ERROR_critic, eq-price) ≈ 0` rule out
+both economic and temporal critic error. **Decision-tree: CASE D → CASE E.**
+
+**Rejected (Phase 7):** P7-A discharge over-priced; P7-B charging under-priced;
+P7-C `k_fb` is the lever; P7-D critic economic/bootstrapping bias; P7-E terminal
+mis-propagation.
+
+**Next decision.** Run the pre-registered one-variable **actor-side A/B —
+target-entropy / entropy-temperature**, 3 seeds, γ=0.20 / n_step=1 / gated /
+`k_fb`=2.5 / architecture / lr / batch / buffer / lookahead all frozen. Measure
+actor P(OFF) at 15–35 Nm, ΔQ, then fuel. **Failure of that lever authorises a
+mixture / discrete-continuous policy head (CASE E).** Do NOT run a new costate
+sweep. Do NOT switch algorithm. `_Q_BT_IC`-as-env-arg (initial-SoC
+generalization) is a separate scoped RL-layer task.
+
+---
+
+## E16 — Phase 8: actor-side breakthrough attempt + Q-oracle ceiling (2026-08-28)
+
+**Hypotheses.** (H1) The unimodal squashed-Gaussian actor is structurally
+inadequate for the bimodal Q; a multimodal actor closes the 15-35 Nm
+mode-selection gap. (H2, the gate) If an *ideal* actor that follows the trained
+critic exactly still cannot approach ECMS, the critic/reward/state is the limit.
+
+**Control.** CONTROL = gated `k_fb=2.5` (3 seeds), unchanged. git `f1f45c5`.
+
+### 8A — baseline reproduction (analysis only)
+Re-ran the Phase-7 matched-state forensics into `results/phase8/baseline/`.
+CONTROL 3-seed scorecard reproduced bit-identically: NEDC 3.7666 +/- 0.0785
+(3/3 CS, 0 viol), FTP75 3.2889 +/- 0.0174 (3/3 CS). Actor<->argmaxQ distance by
+band (NEDC, ECMS-traj states): 15-30 0.322, **30-35 0.718**, 35-50 0.103,
+50-75 0.054.
+
+### 8B — SAC-Q ORACLE ceiling (analysis only, 3 critics, real-env rollout)
+Policy B = greedy arg-max of the trained `min(Q1,Q2)` over a 121-point feasible
+action grid, every step, through the unmodified env.
+
+| | NEDC A actor | NEDC B Q-oracle | FTP75 A | FTP75 B |
+|---|---|---|---|---|
+| V_CE mean (3 seeds) | 3.7666 | **3.9404** (sd 0.47) | 3.2889 | **3.3545** (sd 0.03) |
+| per-seed V_CE | 3.686/3.843/3.770 | 3.634/3.705/4.482 | 3.270/3.304/3.293 | 3.342/3.384/3.337 |
+| ΔSoC mean pp | -0.07 | **-2.48** | -0.37 | **-4.05** |
+| charge-sustaining | 3/3 | **1/3** | 3/3 | **0/3** |
+| beats rule-based? | no | **no (+12.4%)** | no | **no (+3.8%)** |
+
+**The ideal critic-following policy is WORSE than the current actor and loses
+charge-sustaining.** ⇒ **H2 gate: the critic/reward/state is the limiting
+factor.** The actor's conservatism is partly protective — greedy exploitation of
+the critic's engine-OFF lobe over-discharges (off-distribution overestimation).
+
+### 8G — engine operating-point counterfactual (analysis only)
+Matched ECMS states, 161-pt sweep. **`Q@actor-load` is the highest value in
+every torque band on both cycles** — the critic rates the current soft-engine
+operating point ABOVE the ECMS hard-engine point and above the max-load point.
+Meanwhile **`argmax_a r(a)` engine torque > ECMS engine torque in every band,
+both cycles** (NEDC 15-30: argmax-r 33.8 vs ECMS 15.9; 30-35: 58.3 vs 31.7;
+50-75: 106.7 vs 84.2). ⇒ **the reward prefers HARD engine load (C rejected,
+§16 satisfied); the critic fails to propagate that preference (B confirmed).**
+
+### 8C — 2-component mixture actor (training, everything else frozen)
+`results/phase8_mixture_policy.py` (`MixtureSACPolicy`), `phase8_train_mixture.py`.
+Only change: unimodal actor -> 2-Gaussian tanh-squashed mixture. Critic, target,
+tau, gamma 0.20, n_step 1, replay 300k, batch 512, lr 3e-4, net [256,256],
+lookahead 5, k_fb 2.5, eq_factor, 150k steps — all frozen. No benchmark/ECMS
+label (RL objective only). Checkpoints `models_p8c_N{0,1,2}` (+ `_F` for FTP75).
+
+**8C 3-seed result (NEDC):** mean V_CE **3.8730 +/- 0.122**, **1/3 CS** (seed1
+only; per-seed 3.948/3.733/3.939, dSoC +2.4/+1.9/+3.4pp), 0 viol — **WORSE than
+CONTROL 3.7666 (3/3 CS)**, does not beat rule-based 3.5056. Alignment DID improve
+(|a_sac-argmaxQ|/2 at NEDC 30-35 Nm: 0.718 -> 0.226) but the two mixture
+components **collapsed to near-identical** (separation 0.03-0.16) and the
+critic's own argmax-Q-OFF% *fell* (30-35: 87% -> 23%) -- co-training partially
+corrected the OFF overestimation but fuel/CS did not improve. Training is stable
+and progressive (no early-peak-collapse; 8C curves overlay CONTROL). **FTP75 8C:
+mean V_CE 3.2462 +/- 0.003, 3/3 CS** -- joint-best FTP75 SAC (ties gated
+k_fb=1.656's 3.2460), marginally better than CONTROL 3.2889, but **still +0.4%
+above rule-based 3.2323** (does NOT beat RB); FTP75 alignment improved strongly
+(15-30 dist 0.360->0.177, argmaxQ-OFF 80%->31% converged to actor).
+**⇒ H1 REJECTED for the NEDC gap: the policy class is not the binding cause.**
+
+**Rejected (Phase 8):** "the actor alone can close the gap" (8B); "the reward
+lacks engine-efficiency info" (8G/§16 — reward's optimum is at higher engine
+load than ECMS).
+
+**Confirmed:** engine operating point is inefficient *because the critic
+undervalues hard engine load*; the critic's value estimate off the on-policy
+distribution is the binding limit; ECMS has a structural pointwise-precision
+advantage (irreducible floor).
+
+**Next decision.** Reward change (8H) and algorithm swap (8I) are **gated out**.
+After 8C the evidence points to a **critic-side** experiment (one variable,
+3 seeds, critic-only): a conservative / ensemble / pessimistic critic to remove
+the engine-OFF overestimation, OR targeted on-policy coverage of the ECMS-style
+hard-engine operating region. NOT STARTED — awaiting authorisation.
+
+---
+
+## E17 — Phase 9: critic value-fidelity forensics + CQL conservative critic (2026-08-28)
+
+**Hypotheses.** H9-A: OOD / sustained engine-OFF actions are overvalued by the
+critic. H9-B: the critic undervalues the ECMS-relevant high-efficiency
+engine-load region. H9-C: both interact.
+
+**Control.** CONTROL gated k_fb=2.5 (3 seeds), unchanged. git `f1f45c5`.
+
+### §3/§4 — critic error map (analysis only, 3-critic average, ECMS-traj states)
+Region-averaged `min(Q1,Q2)` at matched states, 5 engine-load regions:
+**HIGH_EFF >= ECMS_NBHD >= LOW >= OFF in every torque band on both cycles** --
+same order as the immediate reward and the next-SoC consequence.
+- **Type-1 (OFF overvaluation): NOT triggered** -- `minQ(OFF) < minQ(ECMS_NBHD)`
+  in every band. (Phase-7's positive dQ(OFF-ASSIST) compared OFF to a *mild
+  assist* probe, not the ECMS point.)
+- **Type-2 (high-load undervaluation): NOT cleanly triggered** -- `minQ(HIGH_EFF)`
+  is the *highest* where it has grid actions; but it wins the per-state argmax
+  in only ~2% of 15-35 Nm states.
+- **Real defect = mild systematic LOW-load bias in the per-state argmax** across
+  15-35 Nm (argmaxQ in {OFF,LOW,ECMS_NBHD} ~98%). Q1-Q2 disagreement is small
+  in supported regions (0.004-0.01), large only for OFF/LOW at >=50 Nm
+  (0.056-0.066, i.e. where OFF is infeasible/unsupported).
+
+### OOD test -- is it distribution shift?
+Region analysis at the Q-oracle's OWN visited states vs ECMS-traj states:
+OFF-argmax fraction 25% vs 25%; OFF replay support 28% vs 27%. **Distribution
+shift is NOT the dominant mechanism** -- the Q-oracle SoC collapse is a
+**compounding** effect of the low-load argmax bias applied at ~50% (LOW) + ~25%
+(OFF) of steps, not a far-OOD spike.
+
+### §10 — physical SAC-vs-ECMS decomposition (BSFC-grounded)
+| component | NEDC | FTP75 |
+|---|---|---|
+| A operating-point BSFC (both engines on) | **+0.192 (39%)** | **+0.082 (18%)** |
+| B+D mode-selection & timing (net) | **+0.306 (61%)** | **+0.373 (81%)** |
+| C battery / SoC-equivalence | ~0.000 | ~0.005 |
+
+SAC engine-on 376 vs ECMS 260 steps (NEDC); mean T_CE when ON 55 vs 79 Nm;
+mean BSFC 290 vs 255 g/kWh; efficiency 0.324 vs 0.352. ECMS keeps the engine in
+the low-BSFC high-load island and runs it **less often but harder**. FTP75:
+engine-on counts match (504 vs 501) but occur at different times (249
+one-on-only steps). Figure: `results/phase9/figures/bsfc_map_{NEDC,FTP75}.png`.
+
+### §11 — does the Phase-8 60/25/15 estimate survive?
+**Partly. Operating-point share is LARGER than estimated on NEDC:** measured
+NEDC 61% mode / 39% op-point / ~0% other; FTP75 81% / 18% / ~1%. The "~15%
+other" was really operating-point on NEDC.
+
+### §5 — Experiment A: CQL(H) conservative critic (training)
+`results/phase9_cql.py` (`CQLSAC`). ONLY change = critic loss:
+`L_i = L_TD_i + cql_alpha * (logsumexp_{a in A_s} Q_i(s,a) - Q_i(s,a_data))`
+with `A_s` = 10 uniform + 10 pi(.|s) + 10 pi(.|s') importance-corrected actions
+(CQL(H)). `cql_alpha=1.0` pre-specified. Actor class / reward / state / gamma /
+n_step / k_fb / env / tau / entropy / replay / batch / lr / 150k / seeds all
+frozen. NEDC 3 seeds `models_p9a_N{0,1,2}` -- training in progress.
+
+**§6/§7/§8/§15 CQL results -- Experiment A FAILS at every coefficient:**
+| alpha | normal actor (3 seeds unless noted) | CQL Q-oracle |
+|---|---|---|
+| 1.0 | V_CE 4.9996 +/- 0.230, **0/3 CS** (SoC 47-86%), 1 seed 121 viol | 4.4020, 1/3 CS, worse than Phase-8 (3.9404) |
+| 0.05 (s0) | best-ckpt V_CE 4.74, CS but **147 viol**; end-ckpt SoC 79% | dSoC +34pp |
+| 0.01 (s0) | best-ckpt V_CE 5.01, CS but **123 viol**; end-ckpt SoC 78% | dSoC +46pp |
+
+Gap "closed" vs CONTROL = **-213%** (gap tripled). §6: CQL cut the OFF argmax
+(15-30 Nm 38%->2%) but shifted mass to **LOW not the efficient region**
+(30-35 Nm LOW argmax 52%->78%) and inflated Q ~uniformly -- "lower/higher Q
+everywhere is NOT success" (§6). The conservative term destabilises the
+`k_fb`+SoC-penalty charge-sustaining balance regardless of strength.
+
+**VERDICT: Experiment A (CQL / critic regularisation) REJECTED.** Neither
+Phase-8 actor-capacity nor Phase-9 critic-pessimism closes the gap. §13
+algorithm-swap gate still NOT met (the critic ranks HIGH_EFF highest where it
+has data -- it lacks data, it is not incapable).
+
+**Next authorised (NOT started):** (B) targeted training-time coverage of the
+efficient high-engine-load region (§9, changes no reward) -- HIGH_EFF at
+15-35 Nm has only 8-12% replay support and twin-Q disagreement 0.056-0.066.
+Then (H) a reward term penalising part-load / low engine efficiency if B is
+insufficient (§10: 39% of the NEDC gap is part-load BSFC). Algorithm swap gated.
+
+---
+
 ## Pending
 
 | id | hypothesis | isolated variable |
 |---|---|---|
-| EXP-C | target_entropy −1.0 forces stochasticity opposing commitment | target_entropy ∈ {−1,−2,−3} |
+| **EXP-C** (AUTHORISED-AS-NEXT by Phase 7, not started) | actor is displaced from its own critic's OFF-preferring arg-max at 15–35 Nm; the entropy temperature is holding it off the OFF lobe | target_entropy ∈ {−1,−2,−3} / annealed (+ optional actor-LR bump); 3 seeds; γ=0.20, n_step=1, gated, k_fb=2.5, arch/lr/batch/buffer/lookahead frozen |
+| **EXP-MIX** (RUNNING as Phase 8C) | unimodal Gaussian actor cannot occupy the OFF lobe of a bimodal Q | 2-component mixture actor; critic/reward/env frozen. Phase 8B already shows the *ideal* such policy (Q-oracle) underperforms — 8C tests whether co-training rescues it |
+| **EXP-CRITIC** (Phase 8B gate → next) | the trained critic overvalues sustained engine-OFF and undervalues hard engine load off the on-policy distribution | conservative / ensemble / pessimistic Q (critic objective only), OR targeted on-policy coverage of the ECMS hard-engine operating region; everything else frozen; 3 seeds |
 | EXP-D | γ=0.9999 justification void (terminal term = 0.77%) | γ ∈ {0.99, 0.995, 0.999, 0.9999} |
 | EXP-E | `eq_eff` sign inversion above SoC 66.4% is harmful | clip `eq_eff` to positive floor |
 | EXP-F | buffer 300k (vs SB3 1M default) drives late-run collapse | buffer_size |

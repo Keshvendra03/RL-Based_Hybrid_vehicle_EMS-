@@ -277,3 +277,69 @@ cycles — reinforcing, not weakening, the REFUTED verdict. A newly-documented
 side effect: SoC drift direction is opposite per cycle (NEDC treatment
 over-charges vs control, FTP75 treatment over-depletes). Full detail:
 `PHASE6_FINAL_REPORT.md` §10.
+
+## Phase 7 — economic/costate forensic calibration (2026-08-27, NO training, NO validated component touched)
+
+`results/phase7_forensics.py` / `results/phase7_figures.py` are **analysis-only**
+on the existing checkpoints and replay buffers. **No plant, battery, motor,
+engine, constraint, drive-cycle, evaluator, benchmark, ECMS, SAC-algorithm or
+exploration code was modified.** The one CONTROL evaluation and all matched-state
+probes drive the same validated `EMSEnv` / powertrain blocks used everywhere
+else; `_action_to_torques` was replaced by `types.MethodType` patches only for
+the ECMS and rule-based *reference* rollouts (identical technique to
+`results/evaluate_policy.py`, and only for reference controllers, never for the
+SAC evaluation). The validated conversion `lambda_ECMS = eq_factor_eff × 4.8309`
+is reused unchanged from Phases 2/5.
+
+No `VALIDATION CONFLICT` raised. One recommendation for a *future* scoped
+RL-layer change (does not alter physics): make `_Q_BT_IC` an `EMSEnv`
+constructor argument threaded to `Battery.reset()` so the initial-SoC
+generalization test (40/50/60 %) becomes runnable. Full detail:
+`PHASE7_FINAL_REPORT.md`.
+
+## Phase 8 — actor-side breakthrough attempt (2026-08-28, NO validated component touched)
+
+`results/phase8_qoracle.py`, `phase8_reward_state.py`, `phase8_mixture_policy.py`,
+`phase8_train_mixture.py`, `phase8c_forensics.py`, `phase8_figures.py`.
+
+- **8A/8B/8G forensics: analysis only** on existing CONTROL checkpoints — no
+  training, no physics/reward/benchmark change. The Q-oracle (Policy B) is a
+  pure evaluation-time controller: greedy arg-max of the *trained* twin-critic
+  over a dense feasible action grid, driven through the **unmodified** validated
+  `EMSEnv`. ECMS / rule-based reference rollouts use the same
+  `types.MethodType` patch technique as `results/evaluate_policy.py` and only
+  for reference controllers.
+- **8C: a new actor policy class only.** `MixtureSACPolicy` replaces the
+  unimodal squashed-Gaussian actor with a 2-component tanh-squashed Gaussian
+  mixture. The **critic, target construction, tau, gamma, n_step, replay,
+  batch, lr, net_arch, observation, reward, env, feasibility masks, k_fb,
+  lookahead and 150k budget are all unchanged**. No benchmark/ECMS action,
+  label, or demonstration is used (RL objective only). The action *coordinate*
+  map (`modeaware_gated`) is untouched — only the policy *decision*
+  representation is multimodal, so per-state reachable actions / torques /
+  battery power / bounds are byte-identical to the CONTROL env.
+- Trained checkpoints live in `models_p8c_N{0,1,2}` / `models_p8c_F{0,1,2}`
+  (NOT overwriting any Phase ≤7 model dir). Previous phase results are
+  untouched and remain reproducible.
+
+No `VALIDATION CONFLICT` raised. Full detail: `PHASE8_REPORT.md`.
+
+## Phase 9 — critic value-fidelity forensics + CQL (2026-08-28, NO validated component touched)
+
+`results/phase9_critic_diag.py`, `phase9_ood_test.py`, `phase9_engine_physics.py`
+are **analysis only** on existing CONTROL checkpoints/replay buffers -- no
+training, no physics/reward/benchmark/evaluator change. Engine BSFC / efficiency
+/ fuel-rate are read straight from the validated `combustion_engine` block
+outputs (`v_dot`, `w_ce`, `t_ce`, `p_ce_fuel`); no map is modified. ECMS /
+rule-based reference rollouts use the same `types.MethodType` patch technique as
+`results/evaluate_policy.py`, reference controllers only.
+
+`results/phase9_cql.py` (`CQLSAC`) changes **only the critic loss** -- it adds a
+CQL(H) conservative term (`cql_alpha * (logsumexp_a Q(s,a) - Q(s,a_data))` with
+importance-corrected random + policy action samples) to the standard SB3 SAC
+critic loss. Actor class, reward, state, gamma, n_step, k_fb, env, action map,
+tau, entropy auto-tuning, replay, batch, lr, net_arch, 150k budget and seeds
+{0,1,2} are all unchanged. Checkpoints in `models_p9a_N{0,1,2}` (no Phase <=8
+model dir overwritten).
+
+No `VALIDATION CONFLICT` raised. Full detail: `PHASE9_FINAL_REPORT.md`.

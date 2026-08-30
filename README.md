@@ -22,10 +22,32 @@ foundation for a custom **Gymnasium environment** to train Deep RL agents
 - [x] **Phase 3:** SAC training pipeline (PER, n-step, lookahead,
       checkpointing, TensorBoard logging) built and audited — 211/211 tests
       pass. See `CHANGELOG.md`.
-- [ ] **Phase 4 (in progress, currently failing):** Train the RL agent to
-      beat the rule-based baselines below. Current runs plateau ~15-40%
-      above benchmark and are not yet charge-sustaining — see
-      **`ROADMAP.md`** for the live status, diagnosis, and next steps.
+- [x] **Phase 4:** Gated mode-aware action map; FTP75 reaches the rule-based
+      benchmark, NEDC regresses (SoC runaway). See `PHASE4_FINAL_REPORT.md`.
+- [x] **Phase 5 / 5B:** Costate gain `k_fb` identified; NEDC charge-sustaining
+      solved (3/3 seeds at `k_fb=2.5`), fuel tied. `PHASE5*_*.md`.
+- [x] **Phase 6:** Controlled conditional-exploration A/B — the
+      replay-coverage hypothesis is **REFUTED**. `PHASE6_FINAL_REPORT.md`.
+- [x] **Phase 7:** Economic / costate forensic (no training) — the
+      "battery energy over-priced" hypothesis is **REFUTED**; `k_fb` is a flat
+      plateau. `PHASE7_FINAL_REPORT.md`.
+- [x] **Phase 8:** Actor-side breakthrough attempt. The Q-oracle test shows
+      exploiting the trained critic is **worse** than the current actor and
+      loses charge-sustaining; the 2-component mixture actor confirms it
+      (NEDC 3.873 1/3 CS, FTP75 3.246 3/3 CS, neither beats RB) ⇒ the policy
+      class is not the bottleneck. `PHASE8_REPORT.md`.
+- [x] **Phase 9:** Critic value-fidelity forensics + CQL. On-distribution the
+      critic is **not grossly wrong** (min-Q ranks HIGH_EFF ≥ ECMS_NBHD ≥ LOW
+      ≥ OFF); the defect is a mild compounding low-load arg-max bias in a
+      thinly-covered region. A **CQL conservative critic FAILED at every
+      coefficient** (SoC runaway / 100+ violations). Physical BSFC decomposition:
+      ~39% of the NEDC gap is part-load engine inefficiency. Next: targeted
+      high-load training coverage. `PHASE9_FINAL_REPORT.md`.
+
+> **Current best validated SAC:** NEDC **3.7666** L/100km (3/3 charge-sustaining,
+> +7.4 % vs rule-based 3.5056, +18.1 % vs ECMS 3.1887); FTP75 **3.2889**
+> (3/3 CS, +1.8 % vs rule-based 3.2323). The rule-based benchmark is **not yet
+> beaten** on either cycle. Live status, diagnosis and next steps: **`ROADMAP.md`**.
 
 ### Phase 1 Validation Results (NEDC cycle)
 

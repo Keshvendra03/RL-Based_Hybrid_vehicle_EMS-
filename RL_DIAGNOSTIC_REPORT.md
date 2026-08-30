@@ -21,6 +21,55 @@ are validated and out of scope (see **Locked Components**).
   Q(OFF-ASSIST) did not move (-0.0071 -> -0.0066). Fuel worsened on both
   cycles. See `PHASE6_FINAL_REPORT.md`.
 
+- **Phase 9** (2026-08-28): critic value-fidelity forensics + CQL. On the
+  in-distribution (ECMS-trajectory) states the critic is **not grossly wrong**:
+  region-averaged min-Q ranks HIGH_EFF >= ECMS_NBHD >= LOW >= OFF in every
+  torque band, both cycles, matching the reward and the next-SoC consequence -
+  neither Type-1 (OFF overvaluation) nor Type-2 (high-load undervaluation) is
+  cleanly triggered. The defect is a **mild systematic low-load bias in the
+  per-state argmax** at 15-35 Nm that **compounds** into the Phase-8 Q-oracle
+  SoC collapse (not a far-OOD spike - the Q-oracle's own states are no more OOD
+  than the ECMS states). Physical BSFC-grounded SAC-ECMS decomposition:
+  operating-point inefficiency NEDC +0.19 (39%) / FTP75 +0.08 (18%);
+  mode-selection & timing NEDC +0.31 (61%) / FTP75 +0.37 (81%); battery/SoC ~0.
+  ECMS keeps the engine in the low-BSFC high-load island. **Experiment A =
+  CQL(H) conservative critic FAILED at every coefficient (alpha in {0.01, 0.05,
+  1.0}) -- SoC runaway to 78-86% (V_CE 4.7-5.6, 0/3 CS) or CS-with-100+-
+  violations; every CQL Q-oracle non-CS (dSoC +34..+46pp); gap "closed" = -213%.
+  CQL cut the OFF argmax (38%->2%) but shifted mass to LOW not the efficient
+  region. Critic-regularisation route rejected; best validated controller
+  unchanged.** Next authorised: (B) targeted high-engine-load coverage, then
+  (H) a part-load-penalty reward term. Algorithm swap stays gated.
+  See `PHASE9_FINAL_REPORT.md`.
+
+- **Phase 8** (2026-08-28): actor-side breakthrough attempt + Q-oracle ceiling.
+  **The Phase-7 "actor is the bottleneck" conclusion is DEMOTED.** A SAC-Q
+  oracle (greedy arg-max of the trained twin-critic over a dense feasible grid,
+  rolled through the real env, 3 seeds) is **worse than the current actor and
+  loses charge-sustaining**: NEDC 3.7666 (3/3 CS) -> 3.9404 (1/3 CS); FTP75
+  3.2889 (3/3 CS) -> 3.3545 (0/3 CS); neither beats rule-based. Engine-op
+  counterfactual: the min-Q critic rates the actor's soft-engine operating point
+  ABOVE the ECMS hard-engine point in every torque band, both cycles, while the
+  immediate reward's optimum is at a HIGHER engine load than ECMS everywhere.
+  **⇒ binding constraint = CRITIC value-fidelity off the on-policy distribution
+  (overvalues sustained OFF, undervalues hard engine load), NOT the policy class
+  and NOT the reward.** A 2-component mixture actor (8C) is training as the
+  mandated falsification. Reward change and algorithm swap are gated OUT.
+  See `PHASE8_REPORT.md`.
+
+- **Phase 7** (2026-08-27): economic-value / costate forensic calibration, **no
+  training**. **The "battery energy is economically over-priced" hypothesis is
+  REFUTED.** CONTROL effective battery price (median 2.82 ECMS units on NEDC) is
+  ~2.1x the static λ₀=1.3125 but *matches ECMS's own closed-loop effective
+  price* (median 2.78) — both controllers run below SoC target. `k_fb` is a flat
+  fuel plateau in [2.0, 3.0] and does not move actor P(OFF) at the NEDC
+  operating SoC. Matched-state (ECMS-trajectory): at NEDC 30-35 Nm the SAC
+  critic's arg-max wants engine-OFF **87%** of the time, the actor delivers
+  **0%**; `Q(a)` is bimodal, actor mean ~1.5 action-units away on the LPS lobe.
+  `ERROR_reward >= 0`, `corr(ERROR_critic, eq-price) ~ 0` -> the critic error is
+  neither economic nor temporal. **CASE D (actor displaced) -> CASE E (unimodal
+  policy class) if the next actor-side lever fails.** See `PHASE7_FINAL_REPORT.md`.
+
 ### CORRECTION TO THE PHASE-5B DIAGNOSIS (issued in Phase 6)
 
 Phase 5B stated "the reward favours OFF and the critic disagrees" at 30-35 Nm.
@@ -30,7 +79,24 @@ positive in only **10%** of states, and **85-87% of states are
 generalised the 15-30 Nm aggregate (+0.0011) into a region where it does not
 hold. There was no conflict at 30-35 Nm to repair.
 
-### CURRENT PRIMARY BOTTLENECK (Phase 6, measured)
+### CURRENT PRIMARY BOTTLENECK (Phase 7, measured — confirms & sharpens Phase 6)
+
+**Actor-side displacement at 15-35 Nm — NOT economic, NOT coverage, NOT
+temporal.** Phase 7 ruled out the economic explanation directly: the CONTROL's
+effective battery price matches ECMS's own closed-loop price, `k_fb` is a flat
+plateau, and `corr(ERROR_critic, eq-price) ~ 0`. On the ECMS-trajectory matched
+states the SAC critic's arg-max-Q already prefers engine-OFF at 72-87% (>=
+ECMS's 40-89%) while the deterministic Gaussian actor delivers 0-47%. `Q(a)` is
+bimodal and the actor mean sits ~1.5 action-units away on the LPS lobe.
+`ERROR_reward >= 0` everywhere (the one-step reward is fine with the ECMS
+action). ~60-65% of the SAC-ECMS gap is mode-selection the critic already ranks
+correctly; ~10-25% is engine operating-point (SAC runs the engine softer than
+ECMS in every torque band — a possible gated-action-head limitation).
+**Classification: CASE D -> CASE E.** Next: one actor-side A/B (target-entropy /
+entropy-temperature), then a mixture / discrete-continuous policy head if it
+fails. Do not run a costate sweep; do not switch algorithm.
+
+### SUPERSEDED — CURRENT PRIMARY BOTTLENECK (Phase 6, measured)
 
 **Actor-side displacement at 15-30 Nm.**
 

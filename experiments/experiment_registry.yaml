@@ -594,11 +594,221 @@ experiments:
         as the binding constraint. New SoC-drift side effect documented,
         opposite sign per cycle (NEDC over-charges, FTP75 over-depletes).
 
+  - id: PHASE7-economic-costate-forensic
+    date: 2026-08-27
+    git_commit_before: f1f45c5
+    git_commit_after: f1f45c5   # + docs commit; no code/training change
+    status: complete
+    type: analysis_only_no_training
+    hypothesis: >
+      The residual SAC-vs-benchmark gap is primarily an economic error --
+      battery energy / SoC mis-valued through eq_factor_eff = eq_factor +
+      k_fb*(0.5 - soc).
+    control: "gated k_fb=2.5 Phase-5 candidate (trained 9a125ad, 3 seeds)"
+    treatment: none
+    changed_variable: none
+    frozen: [gamma, n_step, k_fb, eq_factor, reward, action_map, target_entropy,
+             network, lr, batch, replay, gradient_steps, lookahead, environment,
+             vehicle_model, benchmark, ecms, evaluator, exploration]
+    scripts: [results/phase7_forensics.py, results/phase7_figures.py]
+    outputs: [results/phase7/raw/, results/phase7/data/, results/phase7/figures/,
+              PHASE7_FINAL_REPORT.md]
+    conversion: {ECMS_UNIT: 4.8309, k_fb_ecms_equivalent_env_units: 1.656}
+    key_findings:
+      effective_price_ecms_units_median:
+        NEDC_sac_control: 2.817
+        NEDC_ecms_own_closed_loop: 2.776
+        FTP75_sac_control: 2.721
+        FTP75_ecms_own_closed_loop: 2.846
+        static_lambda0: 1.3125
+        frac_episode_above_lambda0: {NEDC: 0.988, FTP75: 1.000}
+        note: "vs static lambda0 ~2.1x; vs ECMS's OWN closed-loop price a MATCH"
+      median_visited_soc_moving: {NEDC: 0.375, FTP75: 0.474}
+      required_kfb:
+        to_bring_median_price_to_lambda0: "<= 0 (refuted Phase 4/5)"
+        to_match_ecms_median_effective_lambda: {NEDC: 2.43, FTP75: 3.50}
+        to_match_ecms_costate_law_slope: 1.656
+      kfb_axis_already_measured:
+        gated_multiseed: {k1656: [3.8824, "1/3 CS"], k25: [3.7666, "3/3 CS"], k30: [3.7840, "3/3 CS"]}
+        actor_P_OFF_vs_kfb_at_NEDC_soc_32_42: {k1656: 48.0, k25: 48.0, k30: 47.7}
+        verdict: "flat plateau in [2.0,3.0]; k_fb is NOT the lever"
+      matched_state_ecms_trajectory:
+        NEDC_30_35_OFF_pct: {sac_actor: 0, argmax_Q: 87, ecms: 40}
+        NEDC_15_30_OFF_pct: {sac_actor: 47, argmax_Q: 72, ecms: 71}
+        FTP75_15_30_OFF_pct: {sac_actor: 33, argmax_Q: 80, ecms: 89}
+        dQ_off_assist_median_NEDC_30_35: 0.0234
+        dQ_off_assist_pos_pct_NEDC_30_35: 91
+      economic_vs_temporal:
+        median_ERROR_reward_focus_regions: "+0.0007 .. +0.0021 (>= 0 everywhere)"
+        median_ERROR_critic_focus_regions: "-0.0019 .. -0.0091"
+        corr_ERRcritic_eqprice: "-0.04 .. +0.33 (weak/inconsistent)"
+        verdict: "critic error is neither economic (A/B/C/D) nor temporal (E/F)"
+      sac_minus_ecms_gap_seed0_matched_demand:
+        NEDC_total: 0.4975
+        FTP75_total: 0.4601
+        split_NEDC: {mode_selection: 0.32, engine_operating_point: "0.03..0.13",
+                     battery_energy_mgmt: 0.001, over_EV_0_15: 0.14}
+        engine_load_when_on_NEDC_Tce: {sac_30_35: 35, ecms_30_35: 58,
+                                       sac_50_75: 70, ecms_50_75: 95}
+        note: "SAC runs the engine softer & more often; ECMS harder & less often"
+      generalization_crosscycle_3seed_mean_CS:
+        NEDC_to_FTP75: [3.3818, "0/3"]
+        FTP75_to_NEDC: [4.3107, "0/3"]
+        initial_soc_sweep: "NOT run -- _Q_BT_IC is LOCKED; needs scoped env-arg change"
+    rejected_hypotheses: [P7-A_discharge_overpriced, P7-B_charging_underpriced,
+                          P7-C_kfb_is_the_lever, P7-D_critic_economic_or_bootstrap_bias,
+                          P7-E_terminal_mispropagation]
+    classification: "CASE D (critic ~right, actor displaced) -> CASE E if actor-side lever fails"
+    bottleneck: >
+      Actor-side: the squashed-Gaussian policy will not place mass on the
+      engine-OFF region of the action range at 15-35 Nm even though its own
+      critic's arg-max -- and ECMS -- put it there. Q(a) is bimodal; the actor
+      sits on the LPS lobe. ~60-65% of the SAC-ECMS gap is mode-selection the
+      critic already ranks correctly; ~10-25% is engine operating-point.
+    next_recommended: >
+      One-variable actor-side A/B -- target-entropy / entropy-temperature,
+      3 seeds, gamma=0.20 / n_step=1 / gated / k_fb=2.5 / arch / lr / batch /
+      buffer / lookahead frozen. Failure authorises a mixture / discrete-
+      continuous policy head (CASE E). Do NOT run a costate sweep (S8
+      precondition not met). Do NOT switch algorithm (CASE F not reached).
+      NOT STARTED -- awaiting authorisation.
+
+  - id: PHASE8-actor-breakthrough-and-qoracle-ceiling
+    date: 2026-08-28
+    git_commit_before: f1f45c5
+    status: complete               # 8A/8B/8G/8C both cycles done
+    hypotheses:
+      H1: "unimodal squashed-Gaussian actor is structurally inadequate for the bimodal Q"
+      H2_gate: "if an ideal critic-following policy still cannot approach ECMS, the critic/reward/state is the limit"
+    control: "gated k_fb=2.5 CONTROL (3 seeds), unchanged"
+    frozen: [gamma, n_step, k_fb, eq_factor, reward, critic, target_construction,
+             tau, lr, batch, buffer, gradient_steps, lookahead, net_arch,
+             observation, environment, feasibility_masks, benchmark, ecms,
+             evaluator, training_budget, seeds]
+    scripts: [results/phase8_qoracle.py, results/phase8_reward_state.py,
+              results/phase8_mixture_policy.py, results/phase8_train_mixture.py,
+              results/phase8c_forensics.py, results/phase8_figures.py]
+    outputs: [results/phase8/baseline/, results/phase8/data/, results/phase8/figures/,
+              results/phase8/logs/, PHASE8_REPORT.md,
+              "models_p8c_N{0,1,2}", "models_p8c_F{0,1,2}"]
+    key_findings:
+      qoracle_ceiling_8B:
+        NEDC: {A_actor_v_ce: 3.7666, B_qoracle_v_ce: 3.9404, B_sd: 0.470,
+               A_cs: "3/3", B_cs: "1/3", B_dsoc_pp: -2.48, rule_based: 3.5056, ecms: 3.1887}
+        FTP75: {A_actor_v_ce: 3.2889, B_qoracle_v_ce: 3.3545, B_sd: 0.026,
+                A_cs: "3/3", B_cs: "0/3", B_dsoc_pp: -4.05, rule_based: 3.2323, ecms: 2.8097}
+        verdict: >
+          The ideal critic-following policy is WORSE than the current actor and
+          loses charge-sustaining. H2 gate: critic/reward/state is the limit,
+          NOT the policy class.
+      engine_op_counterfactual_8G:
+        Q_at_actor_load_is_highest_in_every_band: true      # both cycles
+        argmax_reward_engine_torque_exceeds_ECMS_in_every_band: true
+        conclusion: "critic undervalues hard engine load (B); reward is sufficient (C rejected)"
+      reward_counterfactual_16:
+        NEDC_argmaxR_vs_ECMS_Tce: {"15-30": [33.8, 15.9], "30-35": [58.3, 31.7], "50-75": [106.7, 84.2]}
+        verdict: "do NOT modify the reward"
+      actor_argmaxQ_distance_NEDC_ecms_traj: {"15-30": 0.322, "30-35": 0.718, "35-50": 0.103, "50-75": 0.054}
+      mixture_actor_8C:
+        NEDC_3seed_v_ce: 3.8730
+        NEDC_3seed_sd: 0.122
+        NEDC_cs: "1/3"
+        per_seed: [3.948, 3.733, 3.939]
+        vs_control: "+0.106 WORSE (CONTROL 3.7666, 3/3 CS)"
+        alignment_improved: {NEDC_30_35_actor_argmaxQ_dist: [0.718, 0.226]}
+        component_separation: "0.03-0.16 (collapsed to ~unimodal)"
+        critic_argmaxQ_OFF_pct_30_35: [87, 23]      # co-training moved the critic's own OFF preference DOWN
+        verdict: "H1 REJECTED -- policy class is not the binding cause"
+        FTP75_3seed_v_ce: 3.2462
+        FTP75_3seed_sd: 0.0028
+        FTP75_cs: "3/3"
+        FTP75_note: "joint-best FTP75 SAC (ties gated k_fb=1.656 3.2460); still +0.4% above rule-based 3.2323; does NOT beat RB"
+    rejected_hypotheses: [actor_alone_can_close_the_gap, reward_lacks_engine_efficiency_info,
+                          multimodal_policy_class_is_the_missing_ingredient]
+    confirmed_hypotheses: [engine_op_inefficient_because_critic_undervalues_hard_load,
+                           critic_value_fidelity_off_distribution_is_the_binding_limit,
+                           ecms_structural_pointwise_precision_advantage]
+    gated_out: [reward_change_8H, algorithm_swap_8I]
+    next_recommended: >
+      Critic-side, one variable, 3 seeds, everything else frozen: a
+      conservative / ensemble / pessimistic Q to remove the sustained-engine-OFF
+      overestimation that makes greedy-Q diverge, OR targeted on-policy coverage
+      of the ECMS hard-engine operating region. NOT a reward change, NOT an
+      algorithm swap. Await authorisation.
+
+  - id: PHASE9-critic-value-fidelity-and-cql
+    date: 2026-08-28
+    git_commit_before: f1f45c5
+    status: complete               # 3/4/10/11 forensics + Experiment A (CQL, FAILED at all alpha)
+    hypotheses:
+      H9_A: "OOD / sustained engine-OFF actions overvalued by the critic"
+      H9_B: "critic undervalues the ECMS high-efficiency engine-load region"
+      H9_C: "both interact"
+    control: "CONTROL gated k_fb=2.5 (3 seeds), unchanged"
+    key_findings:
+      critic_error_map_3_4:
+        region_minQ_ordering: "HIGH_EFF >= ECMS_NBHD >= LOW >= OFF in every band, both cycles (matches reward + next-SoC)"
+        type1_OFF_overvaluation: "NOT triggered -- minQ(OFF) < minQ(ECMS_NBHD) everywhere"
+        type2_highload_undervaluation: "NOT cleanly triggered -- minQ(HIGH_EFF) highest where supported, but wins per-state argmax in ~2% of 15-35 Nm states"
+        real_defect: "mild systematic LOW-load bias in the per-state argmax across 15-35 Nm (argmaxQ in {OFF,LOW,ECMS_NBHD} ~98%); compounding, not a gross single error"
+        q1_q2_disagreement: "0.004-0.01 in supported regions; 0.056-0.066 for OFF/LOW at >=50 Nm (infeasible/unsupported)"
+      ood_test:
+        off_argmaxQ_frac: {ecms_traj_states: 0.25, qoracle_own_states: 0.25}
+        off_replay_support: {ecms_traj_states: 0.27, qoracle_own_states: 0.28}
+        conclusion: "distribution shift is NOT the dominant mechanism; SoC collapse is a compounding low-load-argmax effect"
+      engine_physics_10:
+        NEDC: {A_operating_point: 0.192, A_pct: 39, B_D_mode_timing: 0.306, B_D_pct: 61,
+               C_battery: 0.000, engine_on_sac: 376, engine_on_ecms: 260,
+               mean_Tce_on_sac: 55, mean_Tce_on_ecms: 79, bsfc_sac: 290, bsfc_ecms: 255,
+               eff_sac: 0.324, eff_ecms: 0.352}
+        FTP75: {A_operating_point: 0.082, A_pct: 18, B_D_mode_timing: 0.373, B_D_pct: 81,
+                C_battery: 0.005, engine_on_sac: 504, engine_on_ecms: 501}
+        mechanism: "ECMS keeps the engine in the low-BSFC high-load island; runs it less often but harder"
+      decomposition_60_25_15_survives_11: "partly -- NEDC 61/39/0, FTP75 81/18/1; the '~15% other' was op-point on NEDC"
+    experiment_A_cql:
+      script: results/phase9_cql.py
+      change: "critic loss only: L_TD + cql_alpha*(logsumexp_a Q(s,a) - Q(s,a_data)), CQL(H) importance-corrected"
+      cql_alpha: 1.0
+      cql_n_actions: 10
+      frozen: [actor_class, reward, state, gamma, n_step, k_fb, env, action_map,
+               tau, entropy_autotune, replay, batch, lr, net_arch, budget, seeds]
+      dirs: ["models_p9a_N0", "models_p9a_N1", "models_p9a_N2",
+             "models_p9a_a0.01_N0", "models_p9a_a0.05_N0"]
+      result: "FAIL at every coefficient (alpha in {0.01, 0.05, 1.0})"
+      alpha_1.0_3seed: {v_ce_mean: 4.9996, v_ce_sd: 0.230, cs: "0/3", soc_final_range: "47-86%",
+                        qoracle_v_ce: 4.4020, qoracle_cs: "1/3", gap_closed_vs_control_pct: -213}
+      alpha_weak_seed0: {a0.01: {best_ckpt_v_ce: 5.01, best_ckpt_viol: 123, end_soc: 0.78, qoracle_dsoc_pp: 46},
+                         a0.05: {best_ckpt_v_ce: 4.74, best_ckpt_viol: 147, end_soc: 0.79, qoracle_dsoc_pp: 34}}
+      section6: "CQL cut OFF argmax (15-30 Nm 38%->2%) but shifted mass to LOW not efficient region (30-35 Nm LOW 52%->78%); Q inflated ~uniformly -> not a re-ordering (fails the section-6 bar)"
+      mechanism: "conservative term penalises the policy's own discharge/OFF actions -> actor charges to escape -> destabilises the k_fb+SoC-penalty CS balance regardless of alpha"
+    verdict: "Experiment A REJECTED. Neither actor-capacity (Phase 8) nor critic-regularisation (Phase 9) closes the gap."
+    gated_out: [reward_change_8H_9H, algorithm_swap_8I_9I, k_fb_sweep, more_actor_capacity,
+                cql_critic_regularisation]
+    next_recommended: >
+      (B) targeted training-time coverage of the efficient high-engine-load
+      region -- HIGH_EFF at 15-35 Nm has only 8-12% replay support and twin-Q
+      disagreement 0.056-0.066; changes NO reward. Then (H) a reward term
+      penalising part-load / low engine efficiency if B is insufficient
+      (section 10: 39% of the NEDC gap is part-load BSFC). Algorithm swap gated.
+      NOT STARTED.
+
 planned:
   - id: EXP-C
     hypothesis: "target_entropy -1 forces stochasticity that opposes commitment"
-    isolated_variable: "target_entropy in {-1, -2, -3}"
-    precondition: "run only after the winning reward/action config is fixed"
+    isolated_variable: "target_entropy in {-1, -2, -3} (or annealed) + optional actor-LR bump"
+    precondition: "config now fixed (gated k_fb=2.5 gamma=0.20 n_step=1)"
+    status: "AUTHORISED-AS-NEXT by Phase 7 (CASE D check); NOT STARTED"
+    measure: "actor P(OFF) at 15-35 Nm along ECMS trajectory, then dQ, then fuel (3 seeds)"
+    frozen: [gamma, n_step, k_fb, eq_factor, reward, action_map, network, lr_critic,
+             batch, replay, gradient_steps, lookahead]
+  - id: EXP-MIX
+    hypothesis: >
+      A unimodal squashed-Gaussian actor cannot occupy the engine-OFF lobe of a
+      bimodal Q at 15-35 Nm (Phase 7 CASE E). A 2-component mixture policy, or a
+      discrete OFF/ON head with a continuous within-mode action, can.
+    isolated_variable: "policy parameterization (actor head only)"
+    precondition: "run ONLY if EXP-C fails to move actor P(OFF) at 15-35 Nm"
+    frozen: [gamma, n_step, k_fb, eq_factor, reward, critic, environment, benchmark]
   - id: EXP-D
     hypothesis: "gamma=0.9999 justification is void (terminal term = 0.77%)"
     isolated_variable: "gamma in {0.99, 0.995, 0.999, 0.9999}"
