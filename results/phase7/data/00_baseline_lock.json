@@ -1,0 +1,116 @@
+{
+  "phase": 7,
+  "git_commit_before_experiment": "f1f45c559e126e67a7fc01634895a22b6e08e8de",
+  "date": "2026-08-27",
+  "CONTROL": {
+    "id": "gated k_fb=2.5 (Phase-5 validated candidate)",
+    "checkpoints_NEDC": [
+      "models_p5s0_k2.5/NEDC/sac_ems_best (seed0, V_CE 3.6862)",
+      "models_p5_k2.5/NEDC/sac_ems_best (seed1, 3.8431)",
+      "models_p5_k2.5_s2/NEDC/sac_ems_best (seed2, 3.7704)"
+    ],
+    "checkpoints_FTP75": [
+      "models_p5f_k2.5_s0/FTP75/sac_ems_best (3.2699)",
+      "models_p5f_k2.5_s1/FTP75/sac_ems_best (3.3041)",
+      "models_p5f_k2.5_s2/FTP75/sac_ems_best (3.2926)"
+    ],
+    "seed": [
+      0,
+      1,
+      2
+    ],
+    "gamma": 0.2,
+    "n_step": 1,
+    "action_representation": "modeaware_gated",
+    "eq_factor": {
+      "NEDC": 0.2717,
+      "FTP75": 0.4981
+    },
+    "k_fb": 2.5,
+    "target_entropy": "auto (= -1.0, action_dim=1)",
+    "learning_rate": 0.0003,
+    "batch_size": 512,
+    "buffer_size": 300000,
+    "gradient_steps": 16,
+    "train_freq": 64,
+    "tau": 0.005,
+    "lookahead": 5,
+    "lambda_soc": 2.0,
+    "soc_deadband": 0.1,
+    "net_arch": [
+      256,
+      256
+    ],
+    "training_steps": 150000,
+    "learning_starts": "2 * episode_len",
+    "training_git_commit": "9a125adc7577ec5a1d66962ef32ebb91ce5d5497",
+    "V_CE_NEDC_mean_3seed": 3.7666,
+    "V_CE_FTP75_mean_3seed": 3.2889
+  },
+  "COMPARISON_REFERENCES_not_training_targets": {
+    "linear_k_fb_1.656": {
+      "ckpts": [
+        "models_seed_NEDC_s0",
+        "models_seed_NEDC_s2",
+        "models_final_NEDC_s2"
+      ],
+      "V_CE_NEDC": 3.7727
+    },
+    "gated_k_fb_1.656": {
+      "ckpts": [
+        "models_p4_gated_g20",
+        "models_p4g_N0",
+        "models_p4g_N2"
+      ],
+      "V_CE_NEDC": 3.8824,
+      "CS": "1/3",
+      "ckpts_FTP75": [
+        "models_p4g_F0",
+        "models_p4g_F1",
+        "models_p4g_F2"
+      ],
+      "V_CE_FTP75": 3.246
+    },
+    "gated_k_fb_2.5": {
+      "= CONTROL": true
+    },
+    "gated_k_fb_3.0": {
+      "ckpts": [
+        "models_p5s0_k3.0",
+        "models_p5_k3.0",
+        "models_p5s2_k3.0"
+      ],
+      "V_CE_NEDC": 3.784,
+      "CS": "3/3"
+    },
+    "ECMS": {
+      "NEDC": 3.1887,
+      "FTP75": 2.8097,
+      "lambda0": {
+        "NEDC": 1.3125,
+        "FTP75": 2.4062
+      },
+      "k_fb_ecms": 8.0
+    },
+    "advanced_rule_based": {
+      "NEDC": 3.5056,
+      "FTP75": 3.2323
+    }
+  },
+  "conversion_validated_phase2_phase5": {
+    "ECMS_UNIT": 4.8309,
+    "formula": "lambda_ECMS = eq_factor_eff * 4.8309",
+    "eq_factor_eff": "eq_factor + k_fb * (0.5 - soc_before)",
+    "k_fb_ecms_equivalent_in_env_units": 1.656
+  },
+  "LOCKED_do_not_modify": [
+    "powertrain.py",
+    "driving_cycle.py",
+    "advanced_rule_based.py",
+    "ecms.py",
+    "env<->plant wiring",
+    "feasibility masks",
+    "drive-cycle data",
+    "evaluate_policy.py evaluator"
+  ]
+}

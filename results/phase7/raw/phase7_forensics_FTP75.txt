@@ -1,0 +1,68 @@
+PHASE 7 FORENSIC CALIBRATION -- FTP75
+(pure analysis on existing checkpoints; no training, no physics/algorithm change)
+
+==========================================================================================
+§3 + §5  MATCHED-STATE CENTRAL HYPOTHESIS + ECONOMIC/TEMPORAL DECOMPOSITION -- FTP75
+==========================================================================================
+
+  --- 15-30 Nm  (n=90) ---
+    dr(OFF-ASSIST): mean=+0.0053 median=+0.0077 >0:82%
+    dQ(OFF-ASSIST): mean=+0.0120 median=+0.0120 >0:89%
+    dQ(OFF-LPS):    mean=+0.0049  dr(OFF-LPS): mean=-0.0064
+    ERROR_reward = r(a_ECMS)-r(a_SAC): mean=+0.0008 median=+0.0021
+    ERROR_critic = Q(a_ECMS)-Q(a_SAC): mean=-0.0068 median=-0.0058
+    §5: reward rejects ECMS in 34%  |  critic rejects ECMS in 71%  |  critic rejects WHILE reward accepts in 42%
+    §5: corr(ERR_critic,ERR_reward)=+0.43  corr(ERR_critic,dSoC)=+0.21  corr(ERR_critic,eq_price)=+0.13
+    OFF share:  SAC=33%  argmaxQ=80%  ECMS=89%
+
+  --- 30-35 Nm  (n=80) ---
+    dr(OFF-ASSIST): mean=+0.0007 median=+0.0020 >0:62%
+    dQ(OFF-ASSIST): mean=+0.0074 median=+0.0080 >0:78%
+    dQ(OFF-LPS):    mean=-0.0043  dr(OFF-LPS): mean=-0.0156
+    ERROR_reward = r(a_ECMS)-r(a_SAC): mean=-0.0022 median=+0.0013
+    ERROR_critic = Q(a_ECMS)-Q(a_SAC): mean=-0.0044 median=-0.0028
+    §5: reward rejects ECMS in 38%  |  critic rejects ECMS in 64%  |  critic rejects WHILE reward accepts in 30%
+    §5: corr(ERR_critic,ERR_reward)=+0.71  corr(ERR_critic,dSoC)=+0.60  corr(ERR_critic,eq_price)=-0.04
+    OFF share:  SAC=5%  argmaxQ=31%  ECMS=48%
+
+  --- 35-50 Nm  (n=90) ---
+    dr(OFF-ASSIST): mean=-0.0154 median=-0.0006 >0:48%
+    dQ(OFF-ASSIST): mean=-0.0084 median=+0.0050 >0:64%
+    dQ(OFF-LPS):    mean=-0.0228  dr(OFF-LPS): mean=-0.0334
+    ERROR_reward = r(a_ECMS)-r(a_SAC): mean=-0.0012 median=+0.0010
+    ERROR_critic = Q(a_ECMS)-Q(a_SAC): mean=-0.0038 median=-0.0019
+    §5: reward rejects ECMS in 36%  |  critic rejects ECMS in 64%  |  critic rejects WHILE reward accepts in 32%
+    §5: corr(ERR_critic,ERR_reward)=+0.61  corr(ERR_critic,dSoC)=+0.55  corr(ERR_critic,eq_price)=+0.15
+    OFF share:  SAC=6%  argmaxQ=33%  ECMS=38%
+
+  --- 50-75 Nm  (n=90) ---
+    dr(OFF-ASSIST): mean=-0.1294 median=-0.0065 >0:32%
+    dQ(OFF-ASSIST): mean=-0.0469 median=-0.0178 >0:24%
+    dQ(OFF-LPS):    mean=-0.0949  dr(OFF-LPS): mean=-0.1549
+    ERROR_reward = r(a_ECMS)-r(a_SAC): mean=-0.0010 median=+0.0006
+    ERROR_critic = Q(a_ECMS)-Q(a_SAC): mean=-0.0088 median=-0.0012
+    §5: reward rejects ECMS in 47%  |  critic rejects ECMS in 68%  |  critic rejects WHILE reward accepts in 36%
+    §5: corr(ERR_critic,ERR_reward)=+0.46  corr(ERR_critic,dSoC)=+0.54  corr(ERR_critic,eq_price)=+0.33
+    OFF share:  SAC=0%  argmaxQ=4%  ECMS=11%
+
+==========================================================================================
+§4  COUNTERFACTUAL DENSE ACTION GRID (figures) -- FTP75
+==========================================================================================
+  [saved] figures/counterfactual_FTP75.png
+
+==========================================================================================
+§6  k_fb 1.656 vs 2.5 vs 3.0 -- matched-state economic table -- FTP75
+==========================================================================================
+               variant  k_fb   region  SoC band  eq med(ECMSu)  dr(OFF-ASST)  dQ(OFF-ASST)  P(OFF)%  fuel L/step
+      ref_k1.656_gated 1.656    15-30     40-48          3.064       +0.0084       +0.0194     82.4      -0.0429
+      ref_k1.656_gated 1.656    30-35     40-48          3.086       +0.0025       +0.0133     53.2      -0.0615
+      ref_k1.656_gated 1.656    35-50     40-48          3.016       -0.0287       -0.0169     27.7      -0.0866
+      ref_k1.656_gated 1.656    35-50     46-54          2.465       -0.0034       -0.0280     47.8      -0.0969
+      ref_k1.656_gated 1.656    50-75     40-48          2.960       -0.1014       -0.0170      1.0      -0.1078
+      ref_k1.656_gated 1.656    50-75     46-54          2.711       -0.0601       +0.0170      2.3      -0.1075
+    control_k2.5_gated 2.500    15-30     40-48          3.400       +0.0084       +0.0146     58.0      -0.0449
+    control_k2.5_gated 2.500    30-35     40-48          3.433       +0.0025       +0.0122     11.0      -0.0559
+    control_k2.5_gated 2.500    35-50     40-48          3.326       -0.0287       -0.0160      6.6      -0.0823
+    control_k2.5_gated 2.500    35-50     46-54          2.495       -0.0034       -0.0054     28.4      -0.0945
+    control_k2.5_gated 2.500    50-75     40-48          3.242       -0.1014       -0.0139      0.0      -0.1072
+    control_k2.5_gated 2.500    50-75     46-54          2.866       -0.0601       +0.0068      0.2      -0.1073

@@ -1,0 +1,111 @@
+{
+  "note": "CONTROL gated k_fb=2.5 checkpoints, authoritative evaluator, deterministic",
+  "benchmarks": {
+    "NEDC": {
+      "rule": 3.5056,
+      "ecms": 3.1887
+    },
+    "FTP75": {
+      "rule": 3.2323,
+      "ecms": 2.8097
+    }
+  },
+  "results": {
+    "train_NEDC__eval_FTP75": {
+      "v_ce": [
+        3.3223,
+        3.446,
+        3.3771
+      ],
+      "mean": 3.3818,
+      "std": 0.062,
+      "soc_final": [
+        0.433,
+        0.4217,
+        0.4282
+      ],
+      "cs": [
+        false,
+        false,
+        false
+      ],
+      "off_pct": [
+        39.1,
+        36.8,
+        39.3
+      ]
+    },
+    "train_FTP75__eval_NEDC": {
+      "v_ce": [
+        4.47,
+        4.2739,
+        4.1883
+      ],
+      "mean": 4.3107,
+      "std": 0.1444,
+      "soc_final": [
+        0.9028,
+        0.7983,
+        0.7404
+      ],
+      "cs": [
+        false,
+        false,
+        false
+      ],
+      "off_pct": [
+        34.7,
+        39.4,
+        34.8
+      ]
+    },
+    "train_NEDC__eval_NEDC": {
+      "v_ce": [
+        3.6862,
+        3.8431,
+        3.7704
+      ],
+      "mean": 3.7666,
+      "std": 0.0785,
+      "soc_final": [
+        0.5028,
+        0.4928,
+        0.5023
+      ],
+      "cs": [
+        true,
+        true,
+        true
+      ],
+      "off_pct": [
+        39.8,
+        38.2,
+        37.8
+      ]
+    },
+    "train_FTP75__eval_FTP75": {
+      "v_ce": [
+        3.2699,
+        3.3041,
+        3.2926
+      ],
+      "mean": 3.2889,
+      "std": 0.0174,
+      "soc_final": [
+        0.4947,
+        0.4949,
+        0.4993
+      ],
+      "cs": [
+        true,
+        true,
+        true
+      ],
+      "off_pct": [
+        40.2,
+        42.5,
+        40.8
+      ]
+    }
+  }
+}
