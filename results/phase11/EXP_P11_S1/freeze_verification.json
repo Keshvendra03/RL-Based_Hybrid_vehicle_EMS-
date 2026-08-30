@@ -1,0 +1,56 @@
+{
+  "models_p5s0_k2.5/NEDC": {
+    "actor_unchanged": true,
+    "actor_hash": "c0e494449213bc5ff289a9bea77926c850b0828aeceb9c00d12c0072bcbd46c1",
+    "replay_unchanged": true,
+    "replay_hash": "7e792b73953612b1",
+    "n_replay": 150016,
+    "cfg": {
+      "gamma": 0.2,
+      "tau": 0.005,
+      "batch": 512,
+      "critic_lr": 0.0003,
+      "ent_coef": 0.0017051403410732746,
+      "n_replay": 150016,
+      "target_update_interval": 1,
+      "net_arch": "[256, 256]"
+    },
+    "critic_changed": true
+  },
+  "models_p5_k2.5/NEDC": {
+    "actor_unchanged": true,
+    "actor_hash": "3c20c3527d16078122c784673247e838ebac86f3766dc9991ed8a98ec7673129",
+    "replay_unchanged": true,
+    "replay_hash": "417a38b9278d53aa",
+    "n_replay": 150016,
+    "cfg": {
+      "gamma": 0.2,
+      "tau": 0.005,
+      "batch": 512,
+      "critic_lr": 0.0003,
+      "ent_coef": 0.0013217603554949164,
+      "n_replay": 150016,
+      "target_update_interval": 1,
+      "net_arch": "[256, 256]"
+    },
+    "critic_changed": true
+  },
+  "models_p5_k2.5_s2/NEDC": {
+    "actor_unchanged": true,
+    "actor_hash": "ac32cac509d52af2ba9a04c64297914585a94e5423a71027704b2470e5c371ee",
+    "replay_unchanged": true,
+    "replay_hash": "61f887f6f39aa914",
+    "n_replay": 150016,
+    "cfg": {
+      "gamma": 0.2,
+      "tau": 0.005,
+      "batch": 512,
+      "critic_lr": 0.0003,
+      "ent_coef": 0.001776119344867766,
+      "n_replay": 150016,
+      "target_update_interval": 1,
+      "net_arch": "[256, 256]"
+    },
+    "critic_changed": true
+  }
+}

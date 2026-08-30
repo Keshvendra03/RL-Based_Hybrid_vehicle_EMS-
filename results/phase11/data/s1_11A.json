@@ -1,0 +1,138 @@
+{
+  "source_expression": {
+    "eq_eff": "eq_factor + k_fb*(SOC_TARGET - soc_before)  [ems_env.py EMSEnv.step, soc_before = pre-decision SoC]",
+    "reward": "-reward_scale * (fuel_liters + eq_factor_eff * elec_liters)  [ems_env.py EMSEnv.step]",
+    "fuel_liters": "dm_fuel * K_FUEL_L_PER_KG ; dm_fuel = tank trapezoidal m_dot_fuel [kg]",
+    "elec_liters": "dE_batt * K_ELEC_L_PER_J ; dE_batt = E(Q_prev) - E(Q_now), signed (+ = discharge)",
+    "sign_inversion_condition": "eq_eff < 0  <=>  soc_before > SOC_TARGET + eq_factor/k_fb"
+  },
+  "note_WLTP": "No WLTP cycle exists in this repo. Available cycles: NEDC, FTP75.",
+  "prior_report_threshold_STALE": {
+    "reported": "66.41% (NEDC) / 80.06-80.08% (FTP75)  [RL_DIAGNOSTIC P2 / Phase 2 sec18]",
+    "why_stale": "those were computed with the OLD config eq_factor=1.3125, k_fb=8.0 (0.5 + 1.3125/8 = 0.6641). Phase 2 sec18 note 5 claimed dividing both by 4.8309 keeps the ratio -- but CONTROL k_fb is 2.5, NOT 8.0/4.8309=1.656, so the ratio eq_factor/k_fb changed and the threshold MOVED."
+  },
+  "actual_CONTROL_threshold": {
+    "NEDC": 0.60868,
+    "FTP75": 0.69924
+  },
+  "rollouts": {
+    "NEDC": {
+      "models_p5s0_k2.5/NEDC": {
+        "n_steps": 1220,
+        "soc_min": 0.280500801369328,
+        "soc_max": 0.5028165816919835,
+        "soc_median": 0.37754428551685393,
+        "n_soc_gt_threshold": 0,
+        "n_eqeff_lt_0": 0,
+        "min_eqeff": 0.2646585457700412
+      },
+      "models_p5_k2.5/NEDC": {
+        "n_steps": 1220,
+        "soc_min": 0.2650795669222504,
+        "soc_max": 0.5019107068997809,
+        "soc_median": 0.3765821798736301,
+        "n_soc_gt_threshold": 0,
+        "n_eqeff_lt_0": 0,
+        "min_eqeff": 0.26692323275054775
+      },
+      "models_p5_k2.5_s2/NEDC": {
+        "n_steps": 1220,
+        "soc_min": 0.23621339603960148,
+        "soc_max": 0.5035231803488602,
+        "soc_median": 0.37924451680504745,
+        "n_soc_gt_threshold": 0,
+        "n_eqeff_lt_0": 0,
+        "min_eqeff": 0.2628920491278494
+      }
+    },
+    "FTP75": {
+      "models_p5f_k2.5_s0/FTP75": {
+        "n_steps": 1876,
+        "soc_min": 0.39297682661246963,
+        "soc_max": 0.5567089198288158,
+        "soc_median": 0.4715986132652652,
+        "n_soc_gt_threshold": 0,
+        "n_eqeff_lt_0": 0,
+        "min_eqeff": 0.3563277004279606
+      },
+      "models_p5f_k2.5_s1/FTP75": {
+        "n_steps": 1876,
+        "soc_min": 0.3573738880617956,
+        "soc_max": 0.534449569216501,
+        "soc_median": 0.46978872581967296,
+        "n_soc_gt_threshold": 0,
+        "n_eqeff_lt_0": 0,
+        "min_eqeff": 0.4119760769587475
+      },
+      "models_p5f_k2.5_s2/FTP75": {
+        "n_steps": 1876,
+        "soc_min": 0.38507603786507616,
+        "soc_max": 0.5404470190770015,
+        "soc_median": 0.46184723203882955,
+        "n_soc_gt_threshold": 0,
+        "n_eqeff_lt_0": 0,
+        "min_eqeff": 0.3969824523074961
+      }
+    }
+  },
+  "replay_buffers": {
+    "NEDC": {
+      "models_p5s0_k2.5/NEDC": {
+        "n_transitions": 150016,
+        "soc_min": 0.03957441449165344,
+        "soc_max": 0.9550529718399048,
+        "soc_median": 0.4067651331424713,
+        "n_soc_gt_threshold": 3534,
+        "n_eqeff_lt_0": 3534,
+        "min_eqeff": -0.8659323453903198
+      },
+      "models_p5_k2.5/NEDC": {
+        "n_transitions": 150016,
+        "soc_min": 0.03876456618309021,
+        "soc_max": 0.7682821750640869,
+        "soc_median": 0.39200758934020996,
+        "n_soc_gt_threshold": 1370,
+        "n_eqeff_lt_0": 1370,
+        "min_eqeff": -0.3990054428577423
+      },
+      "models_p5_k2.5_s2/NEDC": {
+        "n_transitions": 150016,
+        "soc_min": 0.03904598951339722,
+        "soc_max": 0.7181568145751953,
+        "soc_median": 0.3972955048084259,
+        "n_soc_gt_threshold": 1086,
+        "n_eqeff_lt_0": 1086,
+        "min_eqeff": -0.2736920416355133
+      }
+    },
+    "FTP75": {
+      "models_p5f_k2.5_s0/FTP75": {
+        "n_transitions": 150016,
+        "soc_min": 0.03852880001068115,
+        "soc_max": 0.6723361015319824,
+        "soc_median": 0.45318007469177246,
+        "n_soc_gt_threshold": 0,
+        "n_eqeff_lt_0": 0,
+        "min_eqeff": 0.0672597587108612
+      },
+      "models_p5f_k2.5_s1/FTP75": {
+        "n_transitions": 150016,
+        "soc_min": 0.038181573152542114,
+        "soc_max": 0.858934760093689,
+        "soc_median": 0.45794677734375,
+        "n_soc_gt_threshold": 424,
+        "n_eqeff_lt_0": 424,
+        "min_eqeff": -0.39923688769340515
+      },
+      "models_p5f_k2.5_s2/FTP75": {
+        "n_transitions": 150016,
+        "soc_min": 0.03994697332382202,
+        "soc_max": 0.6474415063858032,
+        "soc_median": 0.456562876701355,
+        "n_soc_gt_threshold": 0,
+        "n_eqeff_lt_0": 0,
+        "min_eqeff": 0.1294962465763092
+      }
+    }
+  }
+}

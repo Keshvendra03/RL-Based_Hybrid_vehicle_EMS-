@@ -1,0 +1,533 @@
+{
+  "grid_points": 4001,
+  "rows": [
+    {
+      "band": "15-25",
+      "T_MGB": 16.5,
+      "w": 295.2,
+      "dw": 13.49,
+      "soc": 0.5033,
+      "T_CE_reachable": [
+        0.0,
+        30.52
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0115,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": null,
+        "40": null,
+        "45": null,
+        "50": null,
+        "55": null,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.0,
+        "T_CE_58_pm1": 0.0,
+        "T_CE_58_pm5": 0.0
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    },
+    {
+      "band": "15-25",
+      "T_MGB": 18.23,
+      "w": 192.1,
+      "dw": 0.4,
+      "soc": 0.4243,
+      "T_CE_reachable": [
+        0.0,
+        33.73
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0132,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": null,
+        "40": null,
+        "45": null,
+        "50": null,
+        "55": null,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": -22.136,
+        "min": -22.137,
+        "max": -22.136
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.0,
+        "T_CE_58_pm1": 0.0,
+        "T_CE_58_pm5": 0.0
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    },
+    {
+      "band": "15-25",
+      "T_MGB": 16.28,
+      "w": 178.0,
+      "dw": -1.55,
+      "soc": 0.4891,
+      "T_CE_reachable": [
+        0.0,
+        30.11
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0113,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": null,
+        "40": null,
+        "45": null,
+        "50": null,
+        "55": null,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.0,
+        "T_CE_58_pm1": 0.0,
+        "T_CE_58_pm5": 0.0
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    },
+    {
+      "band": "15-25",
+      "T_MGB": 22.87,
+      "w": 231.9,
+      "dw": 0.8,
+      "soc": 0.5032,
+      "T_CE_reachable": [
+        0.0,
+        42.31
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0179,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.7367,
+        "40": -0.9167,
+        "45": null,
+        "50": null,
+        "55": null,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": -27.773,
+        "min": -27.775,
+        "max": -27.772
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.0,
+        "T_CE_58_pm1": 0.0,
+        "T_CE_58_pm5": 0.0
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    },
+    {
+      "band": "25-30",
+      "T_MGB": 25.63,
+      "w": 216.0,
+      "dw": 6.7,
+      "soc": 0.4967,
+      "T_CE_reachable": [
+        0.0,
+        47.41
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0206,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.6011,
+        "40": -0.7618,
+        "45": -0.9225,
+        "50": null,
+        "55": null,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": -31.12,
+        "min": -31.122,
+        "max": -31.12
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.0,
+        "T_CE_58_pm1": 0.0,
+        "T_CE_58_pm5": 0.0
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    },
+    {
+      "band": "25-30",
+      "T_MGB": 29.17,
+      "w": 192.9,
+      "dw": -1.11,
+      "soc": 0.488,
+      "T_CE_reachable": [
+        0.0,
+        53.96
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0242,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.4647,
+        "40": -0.6059,
+        "45": -0.747,
+        "50": -0.8882,
+        "55": null,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": -35.417,
+        "min": -35.419,
+        "max": -35.417
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.112,
+        "T_CE_58_pm1": 0.0,
+        "T_CE_58_pm5": 0.0275
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    },
+    {
+      "band": "25-30",
+      "T_MGB": 28.45,
+      "w": 202.0,
+      "dw": 7.92,
+      "soc": 0.4468,
+      "T_CE_reachable": [
+        0.0,
+        52.63
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0234,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.4896,
+        "40": -0.6344,
+        "45": -0.7791,
+        "50": -0.9239,
+        "55": null,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": -34.545,
+        "min": -34.547,
+        "max": -34.545
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.0765,
+        "T_CE_58_pm1": 0.0,
+        "T_CE_58_pm5": 0.0
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    },
+    {
+      "band": "25-30",
+      "T_MGB": 28.9,
+      "w": 231.2,
+      "dw": 7.92,
+      "soc": 0.4164,
+      "T_CE_reachable": [
+        0.0,
+        53.47
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0239,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.4738,
+        "40": -0.6163,
+        "45": -0.7588,
+        "50": -0.9012,
+        "55": null,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": -35.093,
+        "min": -35.095,
+        "max": -35.093
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.099,
+        "T_CE_58_pm1": 0.0,
+        "T_CE_58_pm5": 0.0135
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    },
+    {
+      "band": "30-35",
+      "T_MGB": 33.07,
+      "w": 207.8,
+      "dw": 9.75,
+      "soc": 0.5015,
+      "T_CE_reachable": [
+        0.0,
+        61.18
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0281,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.3481,
+        "40": -0.4726,
+        "45": -0.5971,
+        "50": -0.7216,
+        "55": -0.8461,
+        "58": -0.9208,
+        "60": -0.9706
+      },
+      "T_CE_58_reachable": true,
+      "a_for_58": -0.9208,
+      "dT_CE_da_around_35_60": {
+        "median": -40.156,
+        "min": -56.141,
+        "max": -40.156
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.249,
+        "T_CE_58_pm1": 0.05,
+        "T_CE_58_pm5": 0.204
+      },
+      "note_58_vs_boundary": "near U_MIN boundary (a_for_58=-0.921, action range starts at -1.0)"
+    },
+    {
+      "band": "30-35",
+      "T_MGB": 31.49,
+      "w": 200.0,
+      "dw": -1.11,
+      "soc": 0.4975,
+      "T_CE_reachable": [
+        0.0,
+        58.26
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0265,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.3917,
+        "40": -0.5224,
+        "45": -0.6532,
+        "50": -0.7839,
+        "55": -0.9147,
+        "58": -0.9931,
+        "60": null
+      },
+      "T_CE_58_reachable": true,
+      "a_for_58": -0.9931,
+      "dT_CE_da_around_35_60": {
+        "median": -38.241,
+        "min": -38.244,
+        "max": -38.241
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.2165,
+        "T_CE_58_pm1": 0.0335,
+        "T_CE_58_pm5": 0.138
+      },
+      "note_58_vs_boundary": "near U_MIN boundary (a_for_58=-0.993, action range starts at -1.0)"
+    },
+    {
+      "band": "30-35",
+      "T_MGB": 32.87,
+      "w": 193.1,
+      "dw": 9.75,
+      "soc": 0.451,
+      "T_CE_reachable": [
+        0.0,
+        60.81
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0279,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.3534,
+        "40": -0.4787,
+        "45": -0.6039,
+        "50": -0.7292,
+        "55": -0.8545,
+        "58": -0.9297,
+        "60": -0.9798
+      },
+      "T_CE_58_reachable": true,
+      "a_for_58": -0.9297,
+      "dT_CE_da_around_35_60": {
+        "median": -39.912,
+        "min": -39.914,
+        "max": -39.912
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.2505,
+        "T_CE_58_pm1": 0.05,
+        "T_CE_58_pm5": 0.196
+      },
+      "note_58_vs_boundary": "near U_MIN boundary (a_for_58=-0.930, action range starts at -1.0)"
+    },
+    {
+      "band": "30-35",
+      "T_MGB": 31.19,
+      "w": 217.5,
+      "dw": 2.4,
+      "soc": 0.4487,
+      "T_CE_reachable": [
+        0.0,
+        57.71
+      ],
+      "a_at_T_CE_max": -1.0,
+      "u_range": [
+        -0.85,
+        1.0
+      ],
+      "U_MIN": -0.85,
+      "U_MAX": 1.0,
+      "monotone_decreasing_in_a": true,
+      "frac_grid_steps_TCE_increasing_with_a": 0.0,
+      "max_single_step_jump_Nm": 0.0262,
+      "longest_flat_region_in_a": 0.0,
+      "inverse_action_for_T_CE": {
+        "35": -0.4005,
+        "40": -0.5325,
+        "45": -0.6645,
+        "50": -0.7965,
+        "55": -0.9286,
+        "58": null,
+        "60": null
+      },
+      "T_CE_58_reachable": false,
+      "a_for_58": null,
+      "dT_CE_da_around_35_60": {
+        "median": -37.876,
+        "min": -37.878,
+        "max": -37.876
+      },
+      "policy_space_width": {
+        "T_CE_50_60": 0.2035,
+        "T_CE_58_pm1": 0.019,
+        "T_CE_58_pm5": 0.1245
+      },
+      "note_58_vs_boundary": "UNREACHABLE: 58 Nm exceeds max feasible T_CE (LPS clamped at U_MIN=-0.85 and/or motor-envelope cap)"
+    }
+  ]
+}

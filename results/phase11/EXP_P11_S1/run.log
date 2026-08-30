@@ -1,0 +1,90 @@
+[EXP-P11-S1] collecting diagnostic states + caching r(s,a) physics ...
+  20 diagnostic states  (5 in 35-50 band)
+[EXP-P11-S1] refining critic: models_p5s0_k2.5/NEDC
+    [models_p5s0_k2.5/NEDC] step   25000  critic_loss=6.887221e-03  (143s)
+    [models_p5s0_k2.5/NEDC] step   50000  critic_loss=9.345347e-02  (286s)
+    [models_p5s0_k2.5/NEDC] step   75000  critic_loss=1.856076e+01  (429s)
+    [models_p5s0_k2.5/NEDC] step  100000  critic_loss=3.138626e-02  (574s)
+    [models_p5s0_k2.5/NEDC] step  125000  critic_loss=2.361880e-02  (720s)
+    [models_p5s0_k2.5/NEDC] step  150000  critic_loss=1.147234e-01  (866s)
+    [models_p5s0_k2.5/NEDC] step  175000  critic_loss=2.137696e-02  (1013s)
+    [models_p5s0_k2.5/NEDC] step  200000  critic_loss=4.416897e-03  (1159s)
+    [models_p5s0_k2.5/NEDC] step  225000  critic_loss=4.393907e-01  (1307s)
+    [models_p5s0_k2.5/NEDC] step  250000  critic_loss=1.515068e-01  (1454s)
+    [models_p5s0_k2.5/NEDC] step  275000  critic_loss=2.981370e-01  (1601s)
+    [models_p5s0_k2.5/NEDC] step  300000  critic_loss=2.593947e+00  (1748s)
+    [models_p5s0_k2.5/NEDC] step  325000  critic_loss=9.835893e-03  (1896s)
+    [models_p5s0_k2.5/NEDC] step  350000  critic_loss=5.235014e-02  (2043s)
+    [models_p5s0_k2.5/NEDC] step  375000  critic_loss=1.413743e+00  (2190s)
+    [models_p5s0_k2.5/NEDC] step  400000  critic_loss=1.936509e-02  (2337s)
+[EXP-P11-S1] refining critic: models_p5_k2.5/NEDC
+    [models_p5_k2.5/NEDC] step   25000  critic_loss=8.251982e-03  (140s)
+    [models_p5_k2.5/NEDC] step   50000  critic_loss=6.649621e-03  (281s)
+    [models_p5_k2.5/NEDC] step   75000  critic_loss=1.174092e-01  (423s)
+    [models_p5_k2.5/NEDC] step  100000  critic_loss=2.562073e-02  (568s)
+    [models_p5_k2.5/NEDC] step  125000  critic_loss=3.303560e-02  (713s)
+    [models_p5_k2.5/NEDC] step  150000  critic_loss=3.467694e-02  (859s)
+    [models_p5_k2.5/NEDC] step  175000  critic_loss=4.537855e-02  (1004s)
+    [models_p5_k2.5/NEDC] step  200000  critic_loss=9.133128e-03  (1151s)
+    [models_p5_k2.5/NEDC] step  225000  critic_loss=3.529862e-02  (1297s)
+    [models_p5_k2.5/NEDC] step  250000  critic_loss=1.035561e-02  (1444s)
+    [models_p5_k2.5/NEDC] step  275000  critic_loss=1.269587e-01  (1591s)
+    [models_p5_k2.5/NEDC] step  300000  critic_loss=2.134357e-02  (1737s)
+    [models_p5_k2.5/NEDC] step  325000  critic_loss=8.141008e-02  (1884s)
+    [models_p5_k2.5/NEDC] step  350000  critic_loss=9.055141e-02  (2031s)
+    [models_p5_k2.5/NEDC] step  375000  critic_loss=1.131636e-01  (2178s)
+    [models_p5_k2.5/NEDC] step  400000  critic_loss=2.308716e-02  (2325s)
+[EXP-P11-S1] refining critic: models_p5_k2.5_s2/NEDC
+    [models_p5_k2.5_s2/NEDC] step   25000  critic_loss=5.476193e-02  (139s)
+    [models_p5_k2.5_s2/NEDC] step   50000  critic_loss=5.247207e-03  (279s)
+    [models_p5_k2.5_s2/NEDC] step   75000  critic_loss=5.251219e-03  (421s)
+    [models_p5_k2.5_s2/NEDC] step  100000  critic_loss=7.886980e-01  (564s)
+    [models_p5_k2.5_s2/NEDC] step  125000  critic_loss=5.223208e-02  (708s)
+    [models_p5_k2.5_s2/NEDC] step  150000  critic_loss=2.466748e-01  (853s)
+    [models_p5_k2.5_s2/NEDC] step  175000  critic_loss=1.335477e-02  (998s)
+    [models_p5_k2.5_s2/NEDC] step  200000  critic_loss=1.292877e-02  (1144s)
+    [models_p5_k2.5_s2/NEDC] step  225000  critic_loss=4.938548e-01  (1291s)
+    [models_p5_k2.5_s2/NEDC] step  250000  critic_loss=1.442898e-02  (1437s)
+    [models_p5_k2.5_s2/NEDC] step  275000  critic_loss=2.460424e-03  (1584s)
+    [models_p5_k2.5_s2/NEDC] step  300000  critic_loss=1.448163e+00  (1730s)
+    [models_p5_k2.5_s2/NEDC] step  325000  critic_loss=5.400021e-03  (1877s)
+    [models_p5_k2.5_s2/NEDC] step  350000  critic_loss=6.053910e-02  (2024s)
+    [models_p5_k2.5_s2/NEDC] step  375000  critic_loss=1.067906e-01  (2170s)
+    [models_p5_k2.5_s2/NEDC] step  400000  critic_loss=3.057499e-02  (2317s)
+
+================ FREEZE VERIFICATION
+  models_p5s0_k2.5/NEDC: actor_unchanged=True  replay_unchanged=True  critic_changed=True  n_replay=150016  cfg={'gamma': 0.2, 'tau': 0.005, 'batch': 512, 'critic_lr': 0.0003, 'ent_coef': 0.0017051403410732746, 'n_replay': 150016, 'target_update_interval': 1, 'net_arch': '[256, 256]'}
+  models_p5_k2.5/NEDC: actor_unchanged=True  replay_unchanged=True  critic_changed=True  n_replay=150016  cfg={'gamma': 0.2, 'tau': 0.005, 'batch': 512, 'critic_lr': 0.0003, 'ent_coef': 0.0013217603554949164, 'n_replay': 150016, 'target_update_interval': 1, 'net_arch': '[256, 256]'}
+  models_p5_k2.5_s2/NEDC: actor_unchanged=True  replay_unchanged=True  critic_changed=True  n_replay=150016  cfg={'gamma': 0.2, 'tau': 0.005, 'batch': 512, 'critic_lr': 0.0003, 'ent_coef': 0.001776119344867766, 'n_replay': 150016, 'target_update_interval': 1, 'net_arch': '[256, 256]'}
+
+================ CORE (25-50 Nm demand)  mean over states, per seed
+seed                              N   resid@aR*   resid@aQ*   TCE@aQ*   TCE@aR*   dT(R-Q)  disag@aR
+models_p5s0_k2.5/NEDC             0    -0.01787     0.00199     24.57     63.22     38.65   0.00625
+models_p5s0_k2.5/NEDC         50000    -0.00861    -0.00214     50.20     63.22     13.03   0.00732
+models_p5s0_k2.5/NEDC        150000    -0.01193     0.00034     34.21     63.22     29.01   0.00749
+models_p5s0_k2.5/NEDC        400000    -0.00661     0.00184     42.26     63.22     20.96   0.00816
+models_p5_k2.5/NEDC               0    -0.00403     0.00906     32.54     63.22     30.69   0.00771
+models_p5_k2.5/NEDC           50000    -0.00018     0.01021     33.99     63.22     29.24   0.00779
+models_p5_k2.5/NEDC          150000    -0.01031     0.00287     21.61     63.22     41.62   0.00677
+models_p5_k2.5/NEDC          400000    -0.01110     0.00456     30.14     63.22     33.08   0.01367
+models_p5_k2.5_s2/NEDC            0    -0.01326    -0.00876     58.81     63.22      4.41   0.01089
+models_p5_k2.5_s2/NEDC        50000    -0.01185     0.00658     11.03     63.22     52.20   0.00595
+models_p5_k2.5_s2/NEDC       150000    -0.00273     0.00683     36.14     63.22     27.09   0.00621
+models_p5_k2.5_s2/NEDC       400000    -0.00609     0.00600     38.90     63.22     24.33   0.01313
+
+================ WELL-COVERED 35-50 Nm band (38-54% replay coverage), per seed
+seed                              N   resid@aR*   TCE@aQ*   dT(R-Q)
+models_p5s0_k2.5/NEDC             0    -0.01466     23.09     52.72
+models_p5s0_k2.5/NEDC         50000    -0.00518     55.07     20.74
+models_p5s0_k2.5/NEDC        150000    -0.00865     51.78     24.03
+models_p5s0_k2.5/NEDC        400000    -0.00197     68.59      7.22
+models_p5_k2.5/NEDC               0    -0.00847     45.36     30.45
+models_p5_k2.5/NEDC           50000    -0.00386     36.46     39.35
+models_p5_k2.5/NEDC          150000    -0.00854     36.38     39.44
+models_p5_k2.5/NEDC          400000    -0.00855     44.25     31.56
+models_p5_k2.5_s2/NEDC            0    -0.01303     73.44      2.37
+models_p5_k2.5_s2/NEDC        50000    -0.01342      1.94     73.87
+models_p5_k2.5_s2/NEDC       150000    -0.00234     44.18     31.63
+models_p5_k2.5_s2/NEDC       400000    -0.00481     64.10     11.71
+
+[saved] results/phase11/EXP_P11_S1/report_data.json

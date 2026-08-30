@@ -1,0 +1,49 @@
+{
+  "task": "PHASE 11 STAGE 0 COMPLETION -- V1 costate verification + V2 ECMS sensitivity",
+  "mode": "STRICT NO-TRAINING AUDIT. No RL training, no controller calibration, no DP solver from scratch.",
+  "git": {
+    "head_commit": "90af96972304a5cfbf9402a80fe4105136b894b5",
+    "head_subject": "docs: add corrected professional Git workflow cheat sheet (docs only, no code)",
+    "stage0_reported_commit": "f1f45c5",
+    "note": "HEAD is one docs-only commit (90af969) above the commit Stage 0 quoted (f1f45c5). No source code changed between them.",
+    "working_tree": "dirty -- doc files modified (EXPERIMENT_LOG, README, RL_DIAGNOSTIC_REPORT, ROADMAP, VALIDATION, experiment_registry, requirements.txt) + untracked PHASE7/8/9/10 reports and results/phase7..11/. NO src/ file is modified or untracked.",
+    "src_tree_clean": true
+  },
+  "environment": {
+    "python": "3.13.2",
+    "stable_baselines3": "2.8.0",
+    "gymnasium": "1.2.3",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "torch": "2.12.0+cpu",
+    "caveat": "Prior phases (Phase 2/3, RL_DIAGNOSTIC) reference SB3 2.9.0 + torch 2.13. Current env is SB3 2.8.0. requirements.txt shows as modified. Checkpoints load without error; determinism of predict() confirmed by re-evaluation below."
+  },
+  "CONTROL": {
+    "identity": "Phase-7+ CONTROL = gated modeaware_gated, k_fb=2.5, gamma=0.20, n_step=1, eq_factor=0.2717(NEDC)/0.4981(FTP75), target_entropy=auto, lr=3e-4, batch=512, buffer=300k, gradient_steps=16, lookahead=5, net=[256,256], 150k steps, obs_dim=20",
+    "trained_at_commit": "9a125adc7577ec5a1d66962ef32ebb91ce5d5497",
+    "checkpoints": {
+      "NEDC": ["models_p5s0_k2.5/NEDC/sac_ems_best (seed0, best_score 3.6862)",
+               "models_p5_k2.5/NEDC/sac_ems_best (seed1, 3.8431)",
+               "models_p5_k2.5_s2/NEDC/sac_ems_best (seed2, 3.7704)"],
+      "FTP75": ["models_p5f_k2.5_s0/FTP75/sac_ems_best (seed0, 3.2699)",
+                "models_p5f_k2.5_s1/FTP75/sac_ems_best (seed1, 3.3041)",
+                "models_p5f_k2.5_s2/FTP75/sac_ems_best (seed2, 3.2926)"]
+    },
+    "3seed_mean": {"NEDC": 3.7666, "FTP75": 3.2889}
+  },
+  "ECMS": {
+    "impl": "src/baselines/ecms.py (frozen); evaluate_policy.py routes ECMS through env.step with lam0={NEDC:1.3125, FTP75:2.4062}, k_fb=8.0, grid=81",
+    "reported_targets": {"NEDC": 3.1887, "FTP75": 2.8097},
+    "lambda0_source": "tune_lambda() bisection over full-cycle rollouts (whole-cycle SoC_end feedback), tol_soc=0.005"
+  },
+  "DP_STATUS": "DEFERRED_NO_EXISTING_VALIDATED_SOLVER",
+  "DP_note": "grep for dynamic programming / value iteration / bellman-grid across src/ and results/ returned nothing. No DP solver exists. Per task rules: NOT writing one. DP is a separate future benchmark task. This does NOT make ECMS the global optimum; 3.1887/2.8097 are NOT a proven physical lower bound.",
+  "analysis_scripts": [
+    "results/phase11/v1_analytical.py   -- V1-A/B: analytical costate derivation, C(SoC), lambda_SAC vs lambda_ECMS",
+    "results/phase11/v1_rollout_R.py    -- V1-C: rollout R = sum(dFuel_L)/sum(P_EM*dt), CONTROL + ECMS, split by regime",
+    "results/phase11/v1_action_ranking.py -- V1-D: matched-state instantaneous-objective argmin, SAC-reward vs ECMS-Hamiltonian",
+    "results/phase11/v2_ecms_sensitivity.py -- V2-A/B/C/D: ECMS sweeps (lambda0 x{0.8..1.2}, k_fb{0,4,8,16}, grid{41,81,161,321}, CS-tol)"
+  ],
+  "policy": "Analysis scripts live under results/phase11/. NO src/ file modified. ems_env.enable_fast_interpolation() (a provided runtime API, proven exact to <1e-12, powertrain clamps all lookups) is used in the sweep scripts purely to keep ECMS-sweep runtime tractable; documented per run.",
+  "evaluation_determinism": "SAC.predict(deterministic=True); env has no stochasticity; re-evaluation reproduces best_score.txt values (checked)."
+}
