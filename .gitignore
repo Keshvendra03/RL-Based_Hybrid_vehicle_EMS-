@@ -13,3 +13,11 @@ models/
 models_*/
 saved_models/
 logs/
+
+# Large experiment artifacts (reproducible from the frozen configs stored
+# next to them): SB3 replay buffers and model checkpoints under results/.
+results/**/*.pkl
+results/**/*.zip
+
+# Per-user IDE session state (project config in .idea/ stays tracked).
+.idea/workspace.xml
