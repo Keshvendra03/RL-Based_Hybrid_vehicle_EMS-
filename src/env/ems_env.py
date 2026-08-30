@@ -355,6 +355,26 @@ class EMSEnv(gym.Env):
                                    # 5 is the validated generalization-safe window
                                    # (long enough to inform the engine-off/on decision,
                                    # short enough not to fingerprint the cycle).
+        clip_eq_eff: bool = False, # PHASE 12A reward-domain SAFETY correction.
+                                   # eq_factor_eff = eq_factor + k_fb*(0.5 - soc)
+                                   # is an UNBOUNDED linear costate feedback: it
+                                   # extrapolates below zero once
+                                   #   soc > 0.5 + eq_factor/k_fb
+                                   # (= 60.87% for the NEDC CONTROL config,
+                                   #  69.92% for FTP75), where a NEGATIVE
+                                   # equivalence factor pays the agent to
+                                   # discharge and penalises charging -- an
+                                   # invalid domain for an energy price.
+                                   # clip_eq_eff=True enforces the physical
+                                   # lower bound eq_factor_eff >= 0. Default
+                                   # False keeps the reward byte-identical to
+                                   # the pre-Phase-12 implementation (R_original
+                                   # stays reproducible): the CONTROL policy
+                                   # never exceeds soc ~50.4%, so the clamp is a
+                                   # no-op on every CONTROL transition and only
+                                   # the previously-invalid soc>threshold region
+                                   # is affected. Does NOT touch eq_factor,
+                                   # k_fb, SOC_TARGET, or src/baselines/ecms.py.
     ) -> None:
         super().__init__()
         if fast_interp:
@@ -381,6 +401,7 @@ class EMSEnv(gym.Env):
         # so evaluation against the benchmark stays on the true fuel figure.
         self.eq_factor = float(eq_factor)
         self.k_fb = float(k_fb)
+        self.clip_eq_eff = bool(clip_eq_eff)   # PHASE 12A: see __init__ docstring
         if action_map not in ACTION_MAPS:
             raise ValueError(f"action_map must be one of {ACTION_MAPS}, got {action_map!r}")
         self.action_map = action_map
@@ -640,6 +661,13 @@ class EMSEnv(gym.Env):
         # true metric) -- v_ce_equiv itself is unaffected, since it's computed
         # separately from the fixed-efficiency EFC block, not from this reward.
         eq_factor_eff = self.eq_factor + self.k_fb * (SOC_TARGET - soc_before)
+        if self.clip_eq_eff:
+            # PHASE 12A reward-domain safety correction: an equivalence factor
+            # (battery-energy price) cannot be negative. Clamp the unbounded
+            # linear costate feedback at its physical lower bound. No-op wherever
+            # eq_factor_eff >= 0 (all CONTROL transitions); only affects the
+            # previously-invalid soc > 0.5 + eq_factor/k_fb region.
+            eq_factor_eff = max(eq_factor_eff, 0.0)
         reward = -self.reward_scale * (fuel_liters + eq_factor_eff * elec_liters)
 
         # 4. per-step SoC restoring penalty (charge-sustaining feedback).
