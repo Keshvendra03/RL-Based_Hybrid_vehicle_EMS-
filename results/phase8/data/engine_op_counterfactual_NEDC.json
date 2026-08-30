@@ -1,0 +1,71 @@
+{
+  "cycle": "NEDC",
+  "regions": {
+    "0-15": {
+      "n": 60,
+      "q_at_ecms_load": -0.1576673056309422,
+      "q_at_actor_load": -0.14403764493763446,
+      "q_at_maxload": -0.17845119355867306,
+      "tce_ecms": 4.875281494680836,
+      "tce_actor": 1.125992666000431,
+      "tce_argmaxq": 1.4609374664723873,
+      "frac_states_Q_prefers_highload": 0.13333333333333333,
+      "verdict": "Q PREFERS low load -> CRITIC/REWARD problem"
+    },
+    "15-30": {
+      "n": 60,
+      "q_at_ecms_load": -0.22891556757191817,
+      "q_at_actor_load": -0.2214089427764217,
+      "q_at_maxload": -0.2391775461534659,
+      "tce_ecms": 15.874080691244979,
+      "tce_actor": 21.843721765551848,
+      "tce_argmaxq": 9.434353280986606,
+      "frac_states_Q_prefers_highload": 0.4166666666666667,
+      "verdict": "Q PREFERS low load -> CRITIC/REWARD problem"
+    },
+    "30-35": {
+      "n": 60,
+      "q_at_ecms_load": -0.2752984702587128,
+      "q_at_actor_load": -0.27072451760371524,
+      "q_at_maxload": -0.27523861080408096,
+      "tce_ecms": 31.735245452160534,
+      "tce_actor": 50.5043602397706,
+      "tce_argmaxq": 7.492741177657818,
+      "frac_states_Q_prefers_highload": 0.9333333333333333,
+      "verdict": "Q PREFERS high load -> ACTOR problem"
+    },
+    "35-50": {
+      "n": 41,
+      "q_at_ecms_load": -0.2361893507583839,
+      "q_at_actor_load": -0.22628376060506192,
+      "q_at_maxload": -0.23528996646040823,
+      "tce_ecms": 51.56322632449142,
+      "tce_actor": 55.40064051034072,
+      "tce_argmaxq": 46.56849022662914,
+      "frac_states_Q_prefers_highload": 0.6585365853658537,
+      "verdict": "Q PREFERS high load -> ACTOR problem"
+    },
+    "50-75": {
+      "n": 60,
+      "q_at_ecms_load": -0.4291057185580333,
+      "q_at_actor_load": -0.3390672733386358,
+      "q_at_maxload": -0.34212178190549214,
+      "tce_ecms": 84.22101420623352,
+      "tce_actor": 96.02161235691709,
+      "tce_argmaxq": 89.60291769133917,
+      "frac_states_Q_prefers_highload": 0.9666666666666667,
+      "verdict": "Q PREFERS high load -> ACTOR problem"
+    },
+    ">75": {
+      "n": 60,
+      "q_at_ecms_load": -0.3760310257474581,
+      "q_at_actor_load": -0.37441474149624504,
+      "q_at_maxload": -0.38904776324828466,
+      "tce_ecms": 111.33266239070645,
+      "tce_actor": 133.0408470871143,
+      "tce_argmaxq": 88.776007323231,
+      "frac_states_Q_prefers_highload": 1.0,
+      "verdict": "Q PREFERS high load -> ACTOR problem"
+    }
+  }
+}

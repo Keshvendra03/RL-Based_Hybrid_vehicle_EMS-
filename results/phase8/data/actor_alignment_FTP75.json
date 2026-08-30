@@ -1,0 +1,34 @@
+{
+  "15-30": {
+    "n": 90,
+    "actor_argmaxQ_dist_mean": 0.36005096961278377,
+    "actor_argmaxQ_dist_median": 0.2344046785176874,
+    "mode_sac_OFF_pct": 33.33333333333333,
+    "mode_argmaxQ_OFF_pct": 80.0,
+    "mode_ecms_OFF_pct": 88.88888888888889
+  },
+  "30-35": {
+    "n": 80,
+    "actor_argmaxQ_dist_mean": 0.21947780149398843,
+    "actor_argmaxQ_dist_median": 0.04402977869609992,
+    "mode_sac_OFF_pct": 5.0,
+    "mode_argmaxQ_OFF_pct": 31.25,
+    "mode_ecms_OFF_pct": 47.5
+  },
+  "35-50": {
+    "n": 90,
+    "actor_argmaxQ_dist_mean": 0.2623296863433019,
+    "actor_argmaxQ_dist_median": 0.0707730386919693,
+    "mode_sac_OFF_pct": 5.555555555555555,
+    "mode_argmaxQ_OFF_pct": 33.33333333333333,
+    "mode_ecms_OFF_pct": 37.77777777777778
+  },
+  "50-75": {
+    "n": 90,
+    "actor_argmaxQ_dist_mean": 0.14555429098275266,
+    "actor_argmaxQ_dist_median": 0.05315596470943992,
+    "mode_sac_OFF_pct": 0.0,
+    "mode_argmaxQ_OFF_pct": 4.444444444444445,
+    "mode_ecms_OFF_pct": 11.11111111111111
+  }
+}

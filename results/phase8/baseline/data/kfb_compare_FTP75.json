@@ -1,0 +1,137 @@
+{
+  "cycle": "FTP75",
+  "variants": {
+    "ref_k1.656_gated": {
+      "k_fb": 1.656,
+      "checkpoint": "models_p4g_F0/FTP75/sac_ems_best",
+      "rows": [
+        {
+          "region": "15-30",
+          "soc_band": "40-48",
+          "n": 40,
+          "eq_median_ecms_units": 3.064300584620321,
+          "dr_OFF_ASSIST_mean": 0.008354721384902267,
+          "dQ_OFF_ASSIST_mean": 0.019382497761398554,
+          "P_OFF_pct": 82.35288400979248,
+          "reward_proxy_mean": -0.042936460971078526
+        },
+        {
+          "region": "30-35",
+          "soc_band": "40-48",
+          "n": 40,
+          "eq_median_ecms_units": 3.0863278492026005,
+          "dr_OFF_ASSIST_mean": 0.0025360443831816395,
+          "dQ_OFF_ASSIST_mean": 0.01326554138213396,
+          "P_OFF_pct": 53.16462489215944,
+          "reward_proxy_mean": -0.06145721352349243
+        },
+        {
+          "region": "35-50",
+          "soc_band": "40-48",
+          "n": 40,
+          "eq_median_ecms_units": 3.015511030642231,
+          "dr_OFF_ASSIST_mean": -0.02866103162600269,
+          "dQ_OFF_ASSIST_mean": -0.016918360907584428,
+          "P_OFF_pct": 27.732771553540726,
+          "reward_proxy_mean": -0.08663484466641033
+        },
+        {
+          "region": "35-50",
+          "soc_band": "46-54",
+          "n": 10,
+          "eq_median_ecms_units": 2.4651943461628356,
+          "dr_OFF_ASSIST_mean": -0.003441039297492842,
+          "dQ_OFF_ASSIST_mean": -0.0280361145734787,
+          "P_OFF_pct": 47.84713965976174,
+          "reward_proxy_mean": -0.09692581548104404
+        },
+        {
+          "region": "50-75",
+          "soc_band": "40-48",
+          "n": 40,
+          "eq_median_ecms_units": 2.960086857089184,
+          "dr_OFF_ASSIST_mean": -0.10138461810738093,
+          "dQ_OFF_ASSIST_mean": -0.016965526156127453,
+          "P_OFF_pct": 1.0417220022818297,
+          "reward_proxy_mean": -0.10779762656925188
+        },
+        {
+          "region": "50-75",
+          "soc_band": "46-54",
+          "n": 18,
+          "eq_median_ecms_units": 2.7110575815717963,
+          "dr_OFF_ASSIST_mean": -0.060147290218119126,
+          "dQ_OFF_ASSIST_mean": 0.016973569989204407,
+          "P_OFF_pct": 2.2604629286914832,
+          "reward_proxy_mean": -0.10753237206564818
+        }
+      ]
+    },
+    "control_k2.5_gated": {
+      "k_fb": 2.5,
+      "checkpoint": "models_p5f_k2.5_s0/FTP75/sac_ems_best",
+      "rows": [
+        {
+          "region": "15-30",
+          "soc_band": "40-48",
+          "n": 40,
+          "eq_median_ecms_units": 3.399673002892997,
+          "dr_OFF_ASSIST_mean": 0.008354721384902267,
+          "dQ_OFF_ASSIST_mean": 0.014636211283504962,
+          "P_OFF_pct": 57.99774536807652,
+          "reward_proxy_mean": -0.04491502392561515
+        },
+        {
+          "region": "30-35",
+          "soc_band": "40-48",
+          "n": 40,
+          "eq_median_ecms_units": 3.432926723578805,
+          "dr_OFF_ASSIST_mean": 0.0025360443831816395,
+          "dQ_OFF_ASSIST_mean": 0.012227478809654713,
+          "P_OFF_pct": 11.002866205316959,
+          "reward_proxy_mean": -0.05589857504141014
+        },
+        {
+          "region": "35-50",
+          "soc_band": "40-48",
+          "n": 40,
+          "eq_median_ecms_units": 3.326017275269068,
+          "dr_OFF_ASSIST_mean": -0.02866103162600269,
+          "dQ_OFF_ASSIST_mean": -0.0160041993483901,
+          "P_OFF_pct": 6.577544533989868,
+          "reward_proxy_mean": -0.08230875036776042
+        },
+        {
+          "region": "35-50",
+          "soc_band": "46-54",
+          "n": 10,
+          "eq_median_ecms_units": 2.4952251791347155,
+          "dr_OFF_ASSIST_mean": -0.003441039297492842,
+          "dQ_OFF_ASSIST_mean": -0.00536976233124733,
+          "P_OFF_pct": 28.406944964744497,
+          "reward_proxy_mean": -0.09447059268788467
+        },
+        {
+          "region": "50-75",
+          "soc_band": "40-48",
+          "n": 40,
+          "eq_median_ecms_units": 3.2423455156781165,
+          "dr_OFF_ASSIST_mean": -0.10138461810738093,
+          "dQ_OFF_ASSIST_mean": -0.0139085385017097,
+          "P_OFF_pct": 0.0363342030185775,
+          "reward_proxy_mean": -0.10724870885614368
+        },
+        {
+          "region": "50-75",
+          "soc_band": "46-54",
+          "n": 18,
+          "eq_median_ecms_units": 2.8663955224453446,
+          "dr_OFF_ASSIST_mean": -0.060147290218119126,
+          "dQ_OFF_ASSIST_mean": 0.006826196279790666,
+          "P_OFF_pct": 0.1541694839853966,
+          "reward_proxy_mean": -0.10727501654483104
+        }
+      ]
+    }
+  }
+}

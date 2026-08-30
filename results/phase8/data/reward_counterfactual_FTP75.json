@@ -1,0 +1,71 @@
+{
+  "cycle": "FTP75",
+  "regions": {
+    "0-15": {
+      "n": 60,
+      "r_at_ecms_load": -0.026220479503212577,
+      "r_at_actor_load": -0.03108262230301888,
+      "r_at_argmaxr": -0.02597680610650687,
+      "tce_ecms": 5.282290617509351,
+      "tce_actor": 3.8850645580573495,
+      "tce_argmaxr": 6.505562278355244,
+      "frac_reward_prefers_ecms_over_actor": 0.9833333333333333,
+      "verdict": "REWARD prefers ECMS load -> reward OK, critic/actor problem"
+    },
+    "15-30": {
+      "n": 60,
+      "r_at_ecms_load": -0.041335238239501006,
+      "r_at_actor_load": -0.041970385453438716,
+      "r_at_argmaxr": -0.03627114790583218,
+      "tce_ecms": 7.742628565472598,
+      "tce_actor": 19.280026211906925,
+      "tce_argmaxr": 25.587535555666463,
+      "frac_reward_prefers_ecms_over_actor": 0.7,
+      "verdict": "REWARD prefers ECMS load -> reward OK, critic/actor problem"
+    },
+    "30-35": {
+      "n": 60,
+      "r_at_ecms_load": -0.06428700061813276,
+      "r_at_actor_load": -0.06268927749128647,
+      "r_at_argmaxr": -0.059704926352615297,
+      "tce_ecms": 37.00439853613116,
+      "tce_actor": 50.001102438745995,
+      "tce_argmaxr": 59.46860964965022,
+      "frac_reward_prefers_ecms_over_actor": 0.6666666666666666,
+      "verdict": "REWARD prefers ECMS load -> reward OK, critic/actor problem"
+    },
+    "35-50": {
+      "n": 60,
+      "r_at_ecms_load": -0.07765810646686837,
+      "r_at_actor_load": -0.0774551590817288,
+      "r_at_argmaxr": -0.0744997469570437,
+      "tce_ecms": 56.1573933149909,
+      "tce_actor": 65.77316556469724,
+      "tce_argmaxr": 75.94014222898495,
+      "frac_reward_prefers_ecms_over_actor": 0.75,
+      "verdict": "REWARD prefers ECMS load -> reward OK, critic/actor problem"
+    },
+    "50-75": {
+      "n": 60,
+      "r_at_ecms_load": -0.10173120166890495,
+      "r_at_actor_load": -0.10117161219592365,
+      "r_at_argmaxr": -0.09921679374547568,
+      "tce_ecms": 90.94181224023777,
+      "tce_actor": 97.23223723745248,
+      "tce_argmaxr": 107.63088802709527,
+      "frac_reward_prefers_ecms_over_actor": 0.55,
+      "verdict": "reward ~indifferent"
+    },
+    ">75": {
+      "n": 60,
+      "r_at_ecms_load": -0.17262856778717509,
+      "r_at_actor_load": -0.17342597247446698,
+      "r_at_argmaxr": -0.17007468668602427,
+      "tce_ecms": 127.57138775652453,
+      "tce_actor": 131.1379629080212,
+      "tce_argmaxr": 153.62175960659025,
+      "frac_reward_prefers_ecms_over_actor": 0.45,
+      "verdict": "reward ~indifferent"
+    }
+  }
+}

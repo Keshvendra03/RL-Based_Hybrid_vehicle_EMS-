@@ -1,0 +1,130 @@
+PHASE 7 FORENSIC CALIBRATION -- NEDC
+(pure analysis on existing checkpoints; no training, no physics/algorithm change)
+
+==========================================================================================
+§1  BASELINE LOCK
+==========================================================================================
+  git commit before experiment : f1f45c559e126e67a7fc01634895a22b6e08e8de
+  CONTROL: gated k_fb=2.5, gamma=0.20, n_step=1, eq_factor(NEDC)=0.2717, tgt_entropy=auto,
+           lr=3e-4, batch=512, buffer=300k, grad_steps=16, lookahead=5, 150k steps, 3 seeds
+  [saved] data/00_baseline_lock.json
+
+==========================================================================================
+§2  EFFECTIVE BATTERY PRICE (state-conditioned) -- NEDC
+==========================================================================================
+  SAC effective price (ECMS units)  vs lambda_ref=1.3125  (cycle lambda0=1.3125)
+    min=1.301 p5=1.870 p25=2.690 median=2.817 p75=3.018 p95=3.341 max=3.964 mean=2.802 sd=0.420
+  fraction of moving-episode priced ABOVE lambda_ref (1.3125) : 98.8%
+  fraction priced ABOVE cycle lambda0 (1.3125)          : 98.8%
+  ECMS effective lambda over its own rollout: median=2.776 p25=2.566 p75=3.113 mean=2.757
+
+    SoC band      n  price median  price mean  vs 1.3125  vs lam0
+         <40    596         2.867       2.924      2.18x    2.18x
+       40-45     54         2.418       2.302      1.84x    1.84x
+       45-50     31         1.829       1.750      1.39x    1.39x
+       50-55      9         1.304       1.305      0.99x    0.99x
+         >55      0   (too few)
+
+      T band      n  price median  price mean  SoC median  vs 1.3125
+        0-15    156         2.798       2.706       0.377      2.13x
+       15-30    226         2.793       2.770       0.377      2.13x
+       30-35    117         2.738       2.746       0.382      2.09x
+       35-50     41         2.727       2.537       0.383      2.08x
+       50-75     80         3.095       3.104       0.352      2.36x
+         >75     70         3.022       3.018       0.358      2.30x
+
+==========================================================================================
+§3 + §5  MATCHED-STATE CENTRAL HYPOTHESIS + ECONOMIC/TEMPORAL DECOMPOSITION -- NEDC
+==========================================================================================
+
+  --- 15-30 Nm  (n=90) ---
+    dr(OFF-ASSIST): mean=-0.0031 median=-0.0034 >0:42%
+    dQ(OFF-ASSIST): mean=+0.0109 median=+0.0064 >0:62%
+    dQ(OFF-LPS):    mean=+0.0077  dr(OFF-LPS): mean=-0.0154
+    ERROR_reward = r(a_ECMS)-r(a_SAC): mean=-0.0006 median=+0.0020
+    ERROR_critic = Q(a_ECMS)-Q(a_SAC): mean=-0.0076 median=-0.0075
+    §5: reward rejects ECMS in 32%  |  critic rejects ECMS in 77%  |  critic rejects WHILE reward accepts in 63%
+    §5: corr(ERR_critic,ERR_reward)=-0.12  corr(ERR_critic,dSoC)=-0.13  corr(ERR_critic,eq_price)=-0.00
+    OFF share:  SAC=47%  argmaxQ=72%  ECMS=71%
+
+  --- 30-35 Nm  (n=90) ---
+    dr(OFF-ASSIST): mean=-0.0020 median=-0.0021 >0:14%
+    dQ(OFF-ASSIST): mean=+0.0176 median=+0.0234 >0:91%
+    dQ(OFF-LPS):    mean=+0.0008  dr(OFF-LPS): mean=-0.0249
+    ERROR_reward = r(a_ECMS)-r(a_SAC): mean=-0.0071 median=+0.0007
+    ERROR_critic = Q(a_ECMS)-Q(a_SAC): mean=-0.0044 median=-0.0022
+    §5: reward rejects ECMS in 40%  |  critic rejects ECMS in 86%  |  critic rejects WHILE reward accepts in 50%
+    §5: corr(ERR_critic,ERR_reward)=+0.61  corr(ERR_critic,dSoC)=+0.58  corr(ERR_critic,eq_price)=+0.11
+    OFF share:  SAC=0%  argmaxQ=87%  ECMS=40%
+
+  --- 35-50 Nm  (n=41) ---
+    dr(OFF-ASSIST): mean=-0.0057 median=-0.0045 >0:15%
+    dQ(OFF-ASSIST): mean=+0.0003 median=+0.0008 >0:51%
+    dQ(OFF-LPS):    mean=-0.0183  dr(OFF-LPS): mean=-0.0260
+    ERROR_reward = r(a_ECMS)-r(a_SAC): mean=-0.0029 median=+0.0008
+    ERROR_critic = Q(a_ECMS)-Q(a_SAC): mean=-0.0100 median=-0.0091
+    §5: reward rejects ECMS in 15%  |  critic rejects ECMS in 63%  |  critic rejects WHILE reward accepts in 51%
+    §5: corr(ERR_critic,ERR_reward)=+0.64  corr(ERR_critic,dSoC)=+0.72  corr(ERR_critic,eq_price)=+0.18
+    OFF share:  SAC=15%  argmaxQ=17%  ECMS=29%
+
+  --- 50-75 Nm  (n=80) ---
+    dr(OFF-ASSIST): mean=-0.6922 median=-1.0131 >0:4%
+    dQ(OFF-ASSIST): mean=-0.7434 median=-0.9327 >0:6%
+    dQ(OFF-LPS):    mean=-0.7971  dr(OFF-LPS): mean=-0.7363
+    ERROR_reward = r(a_ECMS)-r(a_SAC): mean=-0.1438 median=+0.0005
+    ERROR_critic = Q(a_ECMS)-Q(a_SAC): mean=-0.1362 median=-0.0003
+    §5: reward rejects ECMS in 41%  |  critic rejects ECMS in 61%  |  critic rejects WHILE reward accepts in 35%
+    §5: corr(ERR_critic,ERR_reward)=+0.97  corr(ERR_critic,dSoC)=+0.92  corr(ERR_critic,eq_price)=+0.31
+    OFF share:  SAC=0%  argmaxQ=5%  ECMS=20%
+
+==========================================================================================
+§4  COUNTERFACTUAL DENSE ACTION GRID (figures) -- NEDC
+==========================================================================================
+  [saved] figures/counterfactual_NEDC.png
+
+==========================================================================================
+§6  k_fb 1.656 vs 2.5 vs 3.0 -- matched-state economic table -- NEDC
+==========================================================================================
+               variant  k_fb   region  SoC band  eq med(ECMSu)  dr(OFF-ASST)  dQ(OFF-ASST)  P(OFF)%  fuel L/step
+      ref_k1.656_gated 1.656    15-30     32-42          2.633       -0.0005       +0.0042     48.0      -0.1088
+      ref_k1.656_gated 1.656    15-30     42-52          1.647       -0.0030       +0.0003     68.2      -0.0472
+      ref_k1.656_gated 1.656    35-50     32-42          2.634       -0.0028       +0.0035     38.9      -0.0917
+      ref_k1.656_gated 1.656    50-75     32-42          2.546       -0.5891       -0.7178      8.4      -0.1628
+    control_k2.5_gated 2.500    15-30     32-42          3.305       -0.0005       +0.0128     48.0      -0.1082
+    control_k2.5_gated 2.500    15-30     42-52          1.818       -0.0030       -0.0007     59.3      -0.0392
+    control_k2.5_gated 2.500    35-50     32-42          3.307       -0.0028       +0.0011     37.5      -0.0927
+    control_k2.5_gated 2.500    50-75     32-42          3.174       -0.5891       -0.5924      0.0      -0.1553
+        ref_k3.0_gated 3.000    15-30     32-42          3.704       -0.0005       -0.0009     47.7      -0.1078
+        ref_k3.0_gated 3.000    15-30     42-52          1.919       -0.0030       -0.0002     44.1      -0.0458
+        ref_k3.0_gated 3.000    35-50     32-42          3.706       -0.0028       -0.0079     38.2      -0.0918
+        ref_k3.0_gated 3.000    50-75     32-42          3.547       -0.5891       -0.5691      0.0      -0.1503
+
+==========================================================================================
+§8  REQUIRED-k_fb DERIVATION (from measured visited-SoC distribution) -- NEDC
+==========================================================================================
+  median visited SoC (pre-decision, moving) = 37.54%   (p25=35.88%, p75=38.59%)
+  k_fb to reproduce ECMS costate-law slope           : 1.656
+  k_fb to match ECMS median effective lambda          : 2.431
+  proposed minimal sweep (one variable)              : [1.656, 2.078, 2.5]
+  NOTE: k_fb in [2.0,3.0] is ALREADY a measured flat plateau (3.766->3.784, both 3/3 CS);
+        k_fb=1.656 is ALREADY measured (NEDC 1/3 CS, ~3.88). See existing checkpoints.
+
+==========================================================================================
+§11  SAC vs ECMS GAP DECOMPOSITION (matched demand) -- NEDC
+==========================================================================================
+  demand alignment: max|T_SAC - T_ECMS| = 0.00e+00
+
+   region     dFuel     dElec    dTotal  SAC OFF%  ECMS OFF% SAC eng|Tce| ECMS eng|Tce|   dEngPt*
+    brake   -0.0013   +0.0117   +0.0103      0.0%       0.0%          0.0           0.0   +0.0000
+     0-15   +0.0179   +0.1232   +0.1411     34.9%      34.9%          0.0           0.0   +0.0000
+    15-30   +0.3152   -0.1196   +0.1956     58.4%      76.5%         31.6          39.9   +0.0916
+    30-35   +0.2403   -0.1180   +0.1223      4.3%      48.7%         35.2          57.8   +0.1102
+    35-50   +0.0501   -0.0245   +0.0257     51.2%      63.4%         50.1          67.5   +0.0316
+    50-75   +0.0025   +0.0009   +0.0034      0.0%      22.5%         70.3          95.3   -0.1729
+      >75   -0.1272   +0.1274   +0.0001      0.0%       0.0%         93.9         106.9   -0.1272
+
+  GAP (SAC-ECMS) total V_CE = +0.4975 L/100km
+    mode-selection component      ~ +0.6082
+    engine operating-point comp.  ~ +0.0316
+    battery-energy-mgmt component ~ +0.0011
+    SoC-equivalence residual      ~ -0.1432

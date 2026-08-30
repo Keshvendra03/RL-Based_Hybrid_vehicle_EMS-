@@ -1,0 +1,71 @@
+{
+  "cycle": "NEDC",
+  "regions": {
+    "0-15": {
+      "n": 60,
+      "r_at_ecms_load": -0.10514254032517668,
+      "r_at_actor_load": -0.11101179688623097,
+      "r_at_argmaxr": -0.10501606748108354,
+      "tce_ecms": 4.875281494680836,
+      "tce_actor": 1.125992666000431,
+      "tce_argmaxr": 4.9999999813735485,
+      "frac_reward_prefers_ecms_over_actor": 1.0,
+      "verdict": "REWARD prefers ECMS load -> reward OK, critic/actor problem"
+    },
+    "15-30": {
+      "n": 60,
+      "r_at_ecms_load": -0.16182178411853496,
+      "r_at_actor_load": -0.15986233031186878,
+      "r_at_argmaxr": -0.15504987620784474,
+      "tce_ecms": 15.874080691244979,
+      "tce_actor": 21.843721765551848,
+      "tce_argmaxr": 33.75448570710652,
+      "frac_reward_prefers_ecms_over_actor": 0.6666666666666666,
+      "verdict": "REWARD prefers ECMS load -> reward OK, critic/actor problem"
+    },
+    "30-35": {
+      "n": 60,
+      "r_at_ecms_load": -0.2041197081978393,
+      "r_at_actor_load": -0.19410414907214113,
+      "r_at_argmaxr": -0.189999026259942,
+      "tce_ecms": 31.735245452160534,
+      "tce_actor": 50.5043602397706,
+      "tce_argmaxr": 58.34517110927407,
+      "frac_reward_prefers_ecms_over_actor": 0.5,
+      "verdict": "reward ~indifferent"
+    },
+    "35-50": {
+      "n": 41,
+      "r_at_ecms_load": -0.16780379631319506,
+      "r_at_actor_load": -0.16492750166697137,
+      "r_at_argmaxr": -0.16261476340200068,
+      "tce_ecms": 51.56322632449142,
+      "tce_actor": 55.40064051034072,
+      "tce_argmaxr": 61.02100151968257,
+      "frac_reward_prefers_ecms_over_actor": 0.8536585365853658,
+      "verdict": "REWARD prefers ECMS load -> reward OK, critic/actor problem"
+    },
+    "50-75": {
+      "n": 60,
+      "r_at_ecms_load": -0.35192010393201745,
+      "r_at_actor_load": -0.26382866590459925,
+      "r_at_argmaxr": -0.25984346706468403,
+      "tce_ecms": 84.22101420623352,
+      "tce_actor": 96.02161235691709,
+      "tce_argmaxr": 106.6521534231529,
+      "frac_reward_prefers_ecms_over_actor": 0.5333333333333333,
+      "verdict": "reward ~indifferent"
+    },
+    ">75": {
+      "n": 60,
+      "r_at_ecms_load": -0.29260675532840136,
+      "r_at_actor_load": -0.2837528406549243,
+      "r_at_argmaxr": -0.2771010376597248,
+      "tce_ecms": 111.33266239070645,
+      "tce_actor": 133.0408470871143,
+      "tce_argmaxr": 150.39195162167954,
+      "frac_reward_prefers_ecms_over_actor": 0.03333333333333333,
+      "verdict": "REWARD prefers actor(soft) load -> REWARD problem"
+    }
+  }
+}

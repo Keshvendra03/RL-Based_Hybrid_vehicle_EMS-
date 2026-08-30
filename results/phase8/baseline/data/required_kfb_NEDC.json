@@ -1,0 +1,22 @@
+{
+  "cycle": "NEDC",
+  "median_visited_soc": 0.3754081052333068,
+  "p25_soc": 0.35879759997177135,
+  "p75_soc": 0.3859077480940203,
+  "current_kfb": 2.5,
+  "kfb_to_match_ecms_costate_law": 1.6560061272226707,
+  "kfb_to_match_ecms_median_effective_lambda": 2.431425358074464,
+  "note": "Base eq_factor already == lambda_ref/4.8309, so 'median price == 1.3125' is only achievable at k_fb<=0, which reopens the SoC drift refuted in Phase 4/5. The defensible calibration targets are the ECMS costate-law slope (k_fb=1.656) and the ECMS median-effective-lambda match.",
+  "proposed_sweep": [
+    1.656,
+    2.078,
+    2.5
+  ],
+  "existing_checkpoints_on_this_axis": {
+    "1.656": "models_p4g_* (gated, NEDC 1/3 CS ~3.88 ; FTP75 best 3.246)",
+    "2.0": "models_p5_k2.0 (seed1 only)",
+    "2.5": "models_p5*_k2.5 (3 seeds, NEDC 3.7666 3/3 CS) = CONTROL",
+    "3.0": "models_p5*_k3.0 (3 seeds, NEDC 3.784 3/3 CS)",
+    "4.0/5.0": "models_p5_k4.0 / k5.0"
+  }
+}
