@@ -1,0 +1,41 @@
+{
+  "config": {
+    "gamma": 0.2,
+    "lr": 0.0003,
+    "buffer_size": 300000,
+    "batch_size": 512,
+    "tau": 0.005,
+    "train_freq": "TrainFreq(frequency=64, unit=<TrainFrequencyUnit.STEP: 'step'>)",
+    "gradient_steps": 16,
+    "net_arch": "[256, 256]",
+    "ent_coef": "auto",
+    "target_entropy": "-1.0",
+    "seed": 0,
+    "clip_eq_eff": true,
+    "action_map": "modeaware_gated",
+    "eq_factor": 0.2717,
+    "k_fb": 2.5,
+    "lookahead": 5,
+    "obs_dim": 20,
+    "act_space": "Box(-1.0, 1.0, (1,), float32)",
+    "git": "90af96972304a5cfbf9402a80fe4105136b894b5"
+  },
+  "ref": {
+    "lr": 0.0003,
+    "buffer_size": 300000,
+    "batch_size": 512,
+    "tau": 0.005,
+    "gradient_steps": 16,
+    "net_arch": "[256, 256]",
+    "seed": 0,
+    "clip_eq_eff": true,
+    "action_map": "modeaware_gated",
+    "eq_factor": 0.2717,
+    "k_fb": 2.5,
+    "lookahead": 5,
+    "obs_dim": 20,
+    "act_space": "Box(-1.0, 1.0, (1,), float32)"
+  },
+  "diffs_other_than_gamma": {},
+  "PASS": true
+}

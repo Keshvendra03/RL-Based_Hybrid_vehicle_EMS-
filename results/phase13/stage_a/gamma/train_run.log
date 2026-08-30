@@ -1,0 +1,6 @@
+git = 90af96972304a5cfbf9402a80fe4105136b894b5
+--- g20_s0
+    {'gamma': 0.2, 'seed': 0, 'best_score': 3.7968122094845858, 'final_eval_v_ce': 3.7968122094845858, 'final_eval_soc': np.float64(0.506361612999628), 'n_evals': 61}
+--- g20_s1
+    {'gamma': 0.2, 'seed': 1, 'best_score': 3.790771133693719, 'final_eval_v_ce': 3.790771133693719, 'final_eval_soc': np.float64(0.48908075044249444), 'n_evals': 61}
+--- g20_s2
